@@ -91,30 +91,6 @@ changeToOneLetter={
 'TRP':'W'
 }
 
-
-def simWalk(orgs, attr = 'SEQUENCE'):
-    for org in orgs:
-        simPlot(org, attr)
-        plt.title(org['HEADER'])
-        plt.axis([0,10,0,100])
-        print org['HEADER']
-        print org['LINEAGE']
-        raw_input()
-        plt.clf()
-
-#Useful function for ambiguous sequences. makes a bar plot of the similarities between this seq and
-#Each of the 8 ccts
-def simPlot(o, attr = 'SEQUENCE'):
-    seq = o[attr]
-    sims = [similarity(align(seq, ccts[str(i)])) for i in range(1,9)]
-    sims.append(similarity(align(seq, groEL)))
-    sims.append(similarity(align(seq, mmCpn)))
-    plt.bar(range(10), sims)
-    ticks = ['cct%s' %i for i in range(1,9)]
-    ticks.append('GroEL')
-    ticks.append('mmCpn`')
-    plt.xticks(np.arange(10) + 0.5, ticks)
-
 def align(seq1, seq2, ID = 1):
     s = open('.tmp.seq1.%s' %ID, 'w')
     s.write('>seq1\n%s\n' %seq1)
@@ -136,145 +112,6 @@ def identity(aln):
 
 def score(aln):
     return float(re.findall(r'Score:.*\n', aln)[0].split()[-1].strip('%()'))
-
-def cctN(seq, cctFN=None, ID=1):
-    wroteCCTFile = False
-    if not cctFN:
-        writeCCTFile()
-        cctFN = '.tmp.ccts'
-        wroteCCTFile = True
-    seqFN = '.tmp.seq.%s' %ID
-    s = open(seqFN, 'w')
-    s.write('>seq-%s\n%s\n' %(ID, seq))
-    s.close()
-    aln = Bio.Emboss.Applications.WaterCommandline(asequence=seqFN, bsequence=cctFN, gapopen=10, gapextend=0.5, outfile='stdout',stdout=True)
-    aln, err = aln()
-    scores = [float(i.split()[-1]) for i in re.findall(r'Score:.*\n', aln)]
-    subunit = ''
-    highScore = -1
-    for cct, score in enumerate(scores, 1):
-        if score > highScore:
-            highScore = score
-            subunit = cct
-    os.remove(seqFN)
-    if wroteCCTFile:
-        os.remove(cctFN)
-    return subunit
-
-def writeCCTFile(cctFN = '.tmp.ccts'):
-    cct = open(cctFN, 'w')
-    for i in range(1,9):
-        cct.write('>cct%s\n%s\n' %(i, ccts[str(i)]))
-    cct.write('>mmCpn\n%s\n' %mmCpn)
-    cct.write('>groEL\n%s\n' %groEL)
-    cct.close()
-
-def parallelMapNames(seqs, n = 12, cctFN = '.tmp.ccts'):
-    writeCCTFile(cctFN)
-    ppservers = ()
-    job_server = pp.Server(n, ppservers = ppservers)
-    jobs = [job_server.submit(cctN, i, (), ('Bio.Emboss.Applications', 'os', 're')) for i in zip(seqs, [cctFN]*len(seqs), range(len(seqs)))]
-    cctNs = [i() for i in jobs]
-    os.remove(cctFN)
-    job_server.destroy()
-    return cctNs
-
-def simMatrix(seqs, n=6):
-    x = len(seqs)
-    m = np.zeros([x, x])
-    ind = np.triu_indices(x)
-    z = len(ind[0])
-    ppservers = ()
-    for i in range(z):
-        answ = similarity(align(seqs[ind[0][i]], seqs[ind[1][i]]))
-        m[ind[0][i],ind[1][i]] = answ
-        m[ind[1][i],ind[0][i]] = answ
-    return m
-
-def parallelDistanceMatrix(seqs, n=6):
-    x = len(seqs)
-    similarityMatrix = np.zeros([x, x])
-    identityMatrix = np.zeros([x, x])
-    scoreMatrix = np.zeros([x, x])
-    ind = np.triu_indices(x)
-    z = len(ind[0])
-    ppservers = ()
-    job_server = pp.Server(n, ppservers = ppservers)
-    jobs = [job_server.submit(align, (seqs[ind[0][i]], seqs[ind[1][i]], i), (), ('Bio.Emboss.Applications', 'os', 're')) for i in range(z)]
-    for i in range(z):
-        aln = str(jobs[i]())
-        sim = similarity(aln)
-        ide = identity(aln)
-        sco = score(aln)
-        similarityMatrix[ind[0][i],ind[1][i]] = sim 
-        similarityMatrix[ind[1][i],ind[0][i]] = sim 
-        identityMatrix[ind[0][i],ind[1][i]] = ide 
-        identityMatrix[ind[1][i],ind[0][i]] = ide 
-        scoreMatrix[ind[0][i],ind[1][i]] = sco
-        scoreMatrix[ind[1][i],ind[0][i]] = sco
-    return similarityMatrix, scoreMatrix, identityMatrix
-
-
-def squareDistanceMatrix(seq1, seq2, n=6):
-    x = len(seq1)
-    y = len(seq2)
-    similarityMatrix = np.zeros([x, y])
-    identityMatrix = np.zeros([x, y])
-    scoreMatrix = np.zeros([x, y])
-    ind = np.indices([x,y])
-    z = len(ind[0].flatten())
-    ind = zip(ind[0].flatten(), ind[1].flatten(), range(z))
-    ppservers = ()
-    job_server = pp.Server(n, ppservers = ppservers)
-    jobs = [job_server.submit(align, (seq1[i[0]], seq2[i[1]], i[2]), (), ('Bio.Emboss.Applications', 'os', 're')) for i in ind]
-    for i, j, k in ind:
-        aln = str(jobs[k]())
-        sim = similarity(aln)
-        ide = identity(aln)
-        sco = score(aln)
-        similarityMatrix[i,j] = sim 
-        #similarityMatrix[ind[i][1],ind[i][0]] = sim 
-        identityMatrix[i,j] = ide 
-        #identityMatrix[ind[i][1],ind[i][0]] = ide 
-        scoreMatrix[i,j] = sco
-        #scoreMatrix[ind[i][1],ind[i][0]] = sco
-    return similarityMatrix, scoreMatrix, identityMatrix
-
-def concat(orgs, fastaFN):
-    orgs = [i for i in orgs.values() if i['CCTN'] in range(1,9)]
-    idMap = {}
-    for org in orgs:
-        name = org['ORGANISM NAME']
-        if name not in idMap:
-            idMap[name] = []
-        idMap[name].append(org)
-    out = open(fastaFN, 'w')
-    for name in idMap:
-        if set(range(1,9)).issubset(set([i['CCTN'] for i in idMap[name]])):
-            cc = ''
-            for n in range(1,9):
-                curr = {'CCTN':0}
-                o = iter(idMap[name])
-                while curr['CCTN'] != n:
-                    curr = o.next()
-                cc = cc + curr['SEQUENCE']
-            out.write('>%s\n%s\n' %(name, cc))
-    out.close()
-
-def fullOrgs(orgs):
-    db = list(set([(i['GENUS'],i['SPECIES'],i['STRAIN']) for i in orgs.values()]))
-    full = []
-    for gss in db:
-        ccts = [i for i in orgs.values() if (i['GENUS'],i['SPECIES'],i['STRAIN']) == gss]
-        if set(range(1,9)).issubset(set([i['CCTN'] for i in ccts])):
-            full.append([])
-            for i in range(1,9):
-                o = iter(ccts)
-                n = o.next()
-                while n['CCTN'] != i:
-                    n=o.next()
-                full[-1].append(n)
-    return full
 
 def getChains(pdbFN):
     lines = open(pdbFN, 'r').readlines()
@@ -371,6 +208,40 @@ def renumberChains(pdbFN, outFN = None):
         out.write(line)
     out.close()
 
+def gappyRegister(consensus, seq, resNums):
+    gappyAts = register(re.sub('-', '', consensus), seq, resNums)[1:]
+    ats = [None for i in range(len(consensus) + 1)]
+    charPlatzen = np.where(np.array(list(consensus)) != '-')[0]+1
+    #print charPlatzen
+    for pl,alnd in zip(charPlatzen, gappyAts):
+        #print 'Platz - %s | ats - %s' %(pl, alnd)
+        ats[pl] = alnd
+    return np.array(ats)
 
-
-    
+def register(consensus, seq, resNums):
+    aln = align(consensus, seq).split('\n')
+    for line in aln: print line
+    aln = [i for i in aln if i[:3] == 'seq']
+    s1 = ''
+    s2 = ''
+    for i in  [j for j in aln if j[:4] == 'seq1']:
+        s1 = s1 + re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', i)
+    for i in  [j for j in aln if j[:4] == 'seq2']:
+        s2 = s2 + re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', i)
+    x = int(aln[0].split()[1])
+    y = int(aln[1].split()[1])
+    ats = [None for i in range(len(consensus)+1)]
+    print consensus
+    print seq
+    print resNums
+    for i1,i2 in zip(s1, s2):
+        if i1 != '-' and i2 != '-':
+            try:
+                ats[x] = resNums[y]
+            except IndexError:
+                print 'Something happened with %s%s' %(y, i2)
+        if i1 != '-':
+            x += 1
+        if i2 != '-':
+            y += 1
+    return np.array(ats)

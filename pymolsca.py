@@ -3,7 +3,6 @@ from matplotlib import cm
 from sklearn.decomposition import fastica
 import infwrapper
 import water
-import pysca
 import fullmsa
 import numpy as np
 
@@ -38,7 +37,7 @@ def eigenPainter(msaFN, chainID, vecs):
     R = fullmsa.redundancy(mtx)
     v,vec = np.linalg.eig(R)
     resNums, chainSeq= chainFromPymol(chainID)
-    ats = pysca.register(fullmsa.consensus(mtx), chainSeq, resNums)
+    ats = water.register(fullmsa.consensus(mtx), chainSeq, resNums)
 
     for i in vecs:
         residues = [ats[j] for j in range(np.shape(mtx)[1])]
@@ -70,7 +69,7 @@ def icaPainter(msaFN, chainID, ncomps = 5):
     #mi = infwrapper.inf(mtx)
     ica = fastica(R, n_components=ncomps)[0]
     resNums, chainSeq = chainFromPymol(chainID.split('+')[0])
-    ats = pysca.gappyRegister(fullmsa.consensus(mtx), chainSeq, resNums)
+    ats = water.gappyRegister(fullmsa.consensus(mtx), chainSeq, resNums)
 
     for i,ic in enumerate(ica[:maxComps,:], 1):
         ic = np.abs(ic)
