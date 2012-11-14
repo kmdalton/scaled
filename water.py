@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import re
 import os
 import Bio.Emboss.Applications
-import pp
 import pickle
 import numpy as np
 import string

@@ -5,8 +5,6 @@ import re
 from copy import deepcopy
 from time import time
 from multiprocessing import cpu_count
-import pp
-from simplices import nSimplex
 import pinfwrapper
 
 #Includes the gap character!
@@ -157,29 +155,6 @@ def randomEigs(mtx, func = weightrix, numVecs = 10):
             np.random.shuffle(m[:,j])
         v[i] = np.linalg.eig(func(m))[0]
     return v
-
-#In the early version of this program i set the diagonal of the positional covariance matrix
-#to zero. This turns out to be a slightly silly idea.C Consequently, this function takes 
-#the binary alignment matrix from which an old covariance matrix  was constructed and returns 
-#a matrix containing the diagonal and zeros everywhere else.
-def variance(mtx):
-    numprocs = cpu_count()
-    l = np.shape(mtx)[1]
-    C = np.zeros([l,l])
-    x, y = np.arange(l), np.arange(l)
-    x, y = chunkify(x, numprocs), chunkify(y, numprocs)
-    print 'Cacheing simplex vertices...'
-    CA = cacheVij()
-    print 'Cacheing complete.\n'
-    print 'Beginning parallelized covariance calculation with %s processors...' %numprocs
-    ppservers = ()
-    job_server = pp.Server(numprocs, ppservers = ppservers)
-    jobs = [job_server.submit(cov, (mtx, x[i], y[i], CA), (), ('numpy as np',)) for i in range(numprocs)]
-    for i in range(numprocs):
-        C = C + jobs[i]()
-        print '%s %% complete' % (100*float(i)/numprocs)
-    job_server.destroy()
-    return C
 
 #Takes square positional covariance matrix. returns square positional correlation matrix
 def Pearson(c):
