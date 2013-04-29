@@ -49,41 +49,59 @@ changeToOneLetter={
 }
 
 def align(seq1, seq2, ID = 1):
+    # write two temporary files with seq1 and seq2
+    # importantly, these sequences will be prefaced by >seq1\n and >seq2\n respectively
     s = open('.tmp.seq1.%s' %ID, 'w')
     s.write('>seq1\n%s\n' %seq1)
     s.close()
     s = open('.tmp.seq2.%s' %ID, 'w')
     s.write('>seq2\n%s\n' %seq2)
     s.close()
+
+    # Submit files to Emboss Water alignment (using Smith-Waterman algorithm)
     aln = Bio.Emboss.Applications.WaterCommandline(asequence='.tmp.seq1.%s' %ID, bsequence='.tmp.seq2.%s' %ID, gapopen=10, gapextend=0.5, outfile='stdout',stdout=True)
     aln, err = aln()
+
+    # Delete temporary files
     os.remove('.tmp.seq1.%s' %ID)
     os.remove('.tmp.seq2.%s' %ID)
+
+    # return alignment
     return aln
 
 def similarity(aln):
+    # pulls out similarity from alignment output
     return float(re.findall(r'Similarity:.*\n', aln)[0].split()[-1].strip('%()'))
 
 def identity(aln):
+    # pulls out identity from alignment output
     return float(re.findall(r'Identity:.*\n', aln)[0].split()[-1].strip('%()'))
 
 def score(aln):
+    # pulls out score from alignment output
     return float(re.findall(r'Score:.*\n', aln)[0].split()[-1].strip('%()'))
 
 def getChains(pdbFN):
+    # finds the chains in a pdb file
     lines = open(pdbFN, 'r').readlines()
     lines = [i for i in lines if i[:3] == 'ATO']
     chains = {}
     for line in lines:
         chain = line[21]
         if chain not in chains:
+            # instantiate new index for new chain
             chains[chain] = []
+        # add line (atom) to that chain
         chains[chain].append(line)
     return chains
 
 def getSeq(lines):
+    # get sequence of a chain in lines from getChains)
     length = max([int(i[22:26]) for i in lines]) 
+    # instantiate seq variable by putting dash for every atom in chain
     seq = ['-' for i in range(length)]
+
+    # save and return list of residues
     for line in lines:
         resNum = int(line[22:26]) - 1
         resName = line[17:20].upper()
@@ -91,7 +109,8 @@ def getSeq(lines):
             seq[resNum] = changeToOneLetter[resName]
     return ''.join(seq).replace('-', '')
 
-def rechain(pdbFN, outFN, cctFN = '.tmp.ccts'):
+# This function is not called anywhere else in the code.
+def rechain(pdbFN, outFN, cctFN = '.tmp.ccts'): 
     writeCCTFile(cctFN)
     chains = getChains(pdbFN)
     out = open(outFN, 'w')
@@ -110,7 +129,9 @@ def rechain(pdbFN, outFN, cctFN = '.tmp.ccts'):
     out.close()
     os.remove(cctFN)
 
+
 def renumber(pdbFN, outFN):
+    # renumber residues in pdb file (presumably for merging)
     lines = [i for i in open(pdbFN, 'r').readlines() if i[:3] == 'ATO']
     out = open(outFN, 'w')
     curr = 0
@@ -122,6 +143,7 @@ def renumber(pdbFN, outFN):
             resnum += 1
         out.write(line[:21] + 'A' + string.rjust(str(resnum), 4) + line[26:])
 
+# Again, this function is not called anywhere else in the code, and I'm not sure what cctN does.
 def alignmentToStructure(pdbFN):
     seq = getSeq(open(pdbFN, 'r').readlines())
     cctNum = cctN(seq)
@@ -145,6 +167,7 @@ def alignmentToStructure(pdbFN):
     return ats
 
 def renumberChains(pdbFN, outFN = None):
+    # renumber chains
     if outFN == None:
         outFN = pdbFN
     lines = open(pdbFN).readlines()
@@ -166,6 +189,7 @@ def renumberChains(pdbFN, outFN = None):
     out.close()
 
 def gappyRegister(consensus, seq, resNums):
+    
     gappyAts = register(re.sub('-', '', consensus), seq, resNums)[1:]
     ats = [None for i in range(len(consensus) + 1)]
     charPlatzen = np.where(np.array(list(consensus)) != '-')[0]+1
@@ -176,7 +200,10 @@ def gappyRegister(consensus, seq, resNums):
     return np.array(ats)
 
 def register(consensus, seq, resNums):
+    # align consusnesus with seq using water algorithm
     aln = align(consensus, seq).split('\n')
+
+    # get back aligned sequences with gaps
     for line in aln: print line
     aln = [i for i in aln if i[:3] == 'seq']
     s1 = ''
@@ -187,10 +214,13 @@ def register(consensus, seq, resNums):
         s2 = s2 + re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', i)
     x = int(aln[0].split()[1])
     y = int(aln[1].split()[1])
+
     ats = [None for i in range(len(consensus)+1)]
+
     print consensus
     print seq
     print resNums
+    # return residue numbers corresponding to alignment
     for i1,i2 in zip(s1, s2):
         if i1 != '-' and i2 != '-':
             try:

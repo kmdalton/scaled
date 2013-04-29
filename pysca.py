@@ -4,17 +4,21 @@ import msa
 import water
 import re
 
-
+# returns relative sequence of aligned sequences, but removes '-' from consensus sequence
+# Repeated in water.py
 def gappyRegister(consensus, seq, resNums):
     gappyAts = register(re.sub('-', '', consensus), seq, resNums)[1:]
     ats = [None for i in range(len(consensus) + 1)]
+    
     charPlatzen = np.where(np.array(list(consensus)) != '-')[0]+1
-    #print charPlatzen
+    #print charPlatzena
     for pl,alnd in zip(charPlatzen, gappyAts):
         #print 'Platz - %s | ats - %s' %(pl, alnd)
         ats[pl] = alnd
     return np.array(ats)
 
+# returns relative sequence of aligned sequences
+# Repeated in water.py
 def register(consensus, seq, resNums):
 
     aln = water.align(consensus, seq).split('\n')
@@ -44,6 +48,7 @@ def register(consensus, seq, resNums):
             y += 1
     return np.array(ats)
 
+# No idea what this does. 
 def IDSectors(v, **kwargs):
     cut, sec = 0.1, 3 
     if 'cut' in kwargs:
