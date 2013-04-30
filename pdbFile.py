@@ -1,5 +1,6 @@
 import numpy as np
 
+# ATOM object uses a PDB file line for construction
 class atom(dict):
     def __init__(self, line=None):
         self.line = None
@@ -19,6 +20,7 @@ class atom(dict):
         self['XYZ'][2] = float(line[46:54])
         self['ELEMENT'] = line[76:78].strip().upper()
 
+# PDBfile object just takes a pdb file name
 class pdbDB():
     def __init__(self, pdbFN=None):
         self.atoms = None
@@ -52,16 +54,19 @@ class pdbDB():
     def calphaDistMat(self, chainID):
         return distMat(self.alphas[chainID])
 
+# returns list of atom objects
 def atoms(pdbFN):
     lines = open(pdbFN).readlines()
     lines = [line for line in lines if line[:4] == 'ATOM']
     return [atom(lines) for lines in lines]
 
+# returns distance between two atom objects
 def dist(atom1, atom2):
     R1, R2 = atom1['XYZ'], atom2['XYZ']
     D = np.sqrt(np.sum(np.square(R1-R2)))
     return D
 
+# returns distance matrix between all atoms in pdb file
 def distMat(pdbFN, chainID):
     a = atoms(pdbFN)
     a = [i for i in a if i['CHAIN'] == chainID and i['ATOMTYPE'] == 'CA']
@@ -72,6 +77,7 @@ def distMat(pdbFN, chainID):
     D = np.sqrt((x-x.T)*(x-x.T)+(y-y.T)*(y-y.T)+(z-z.T)*(z-z.T))
     return D
 
+# copy of previous function, but also returns resNums
 def distMat(pdbFN, chainID):
     a = atoms(pdbFN)
     a = [i for i in a if i['CHAIN'] == chainID and i['ATOMTYPE'] == 'CA']

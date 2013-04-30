@@ -1,5 +1,5 @@
 import re
-import tails
+# import tails -- commenting for now because its throwing error and I can't find it online
 import numpy as np
 import pylab
 from copy import deepcopy
@@ -7,23 +7,28 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 
+# makes a hexagonabl binning plot of x y z
 def hexbin(x, y, z):
     ax = plt.gca()
     ax.set_axis_bgcolor(mpl.cm.jet(0.))
     plt.hexbin(x,y,z)
     plt.show()
 
+# makes a heat map
 def heatMap(matrix, color = 'jet', *args):
     args = [i.lower() for i in args]
     matrix = deepcopy(matrix)
     if 'baseline' in args:
-        matrix = matrix + np.min(matrix)
+        # shouldn't this be - np.min?
+        matrix = matrix + np.min(matrix) 
     if 'log' in args:
         matrix = np.log10(np.abs(matrix))
     if 'diag' in args:
         matrix[np.diag_indices(np.shape(matrix)[0])] = 0.
+
     plt.imshow(10.*matrix/np.max(matrix), interpolation = 'nearest', cmap = plt.get_cmap(color, 10.))
 
+# 
 def genomeVLen(orgs, domain = 'NTAIL', group = 2):
     if group == 1: group = 'GROUPI'
     elif group == 2: group = 'GROUPII'
@@ -39,6 +44,7 @@ def genomeVLen(orgs, domain = 'NTAIL', group = 2):
     
     boxP(x, ticks)
 
+#
 def genomeIsoP(orgs, domain = 'NTAIL', group = 2):
     if group == 1: group = 'GROUPI'
     elif group == 2: group = 'GROUPII'
@@ -54,10 +60,12 @@ def genomeIsoP(orgs, domain = 'NTAIL', group = 2):
     
     boxP(x, ticks)
 
+#
 def boxP(x,ticks):
     plt.boxplot(x)
     pylab.xticks(range(1,len(ticks)+1), [str(i) for i in ticks])
 
+#
 def bimodality(arch):
     fig = plt.figure()
     fig.add_subplot(411)
@@ -74,6 +82,7 @@ def bimodality(arch):
     plt.axis([3.6,6.9,0,25])
     plt.show()
 
+#
 def cladeBoxP(func, clades, domain = 'SEQUENCE'):
     x = []
     xticks = sorted(clades.keys())
@@ -81,6 +90,7 @@ def cladeBoxP(func, clades, domain = 'SEQUENCE'):
         x.append([func(i[domain]) for i in clades[key]])
     boxP(x, xticks)
 
+#
 def cctBoxP(func, ccts, domain = 'SEQUENCE'):
     x = []
     xticks = [str(i) for i in range(1,11)]

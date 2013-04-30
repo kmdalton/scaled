@@ -1,5 +1,6 @@
 import re
 
+# Given fasta filename, collect heads and their sequences
 def importFasta(fastaFN):
     lines = open(fastaFN, 'r').readlines()
     headers = []

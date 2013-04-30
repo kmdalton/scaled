@@ -2,6 +2,7 @@ from time import time
 from ctypes import *
 import numpy as np
 
+# C matrix
 def cMtx(mtx):
     M, L = np.shape(mtx)
     arrayConstructor = c_int*L*M
@@ -9,12 +10,13 @@ def cMtx(mtx):
     msa = arrayConstructor(*tuple([rowConstructor(*tuple(mtx[i])) for i in range(M)]))
     return msa
 
+# back to numpy matrix
 def convertCtoNumpy(X, Y, mtx):
     m = np.zeros([X,Y])
     for i in xrange(X):
         for j in xrange(Y):
             m[i,j] = mtx[i][j]
-
+# 
 def cMI(mtx):
     mi = inf(mtx)
     return np.sum(mi, axis = (0))

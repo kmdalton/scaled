@@ -57,6 +57,7 @@ aaMapping = {
 }
 
 #ordMapping is a faster hash for constructing the alignment matrix
+#hashing is by unicode code point of character.
 ordMapping = 20*np.ones(500, dtype='int')
 for i in AminoAcids:
     ordMapping[ord(i)] = aaMapping[i]
@@ -65,16 +66,16 @@ for i in AminoAcids:
 ordMapping[ord('X')] = aaMapping['-']
 ordMapping[ord(' ')] = aaMapping['-']
 
-
-
 #Background level frequences for amino acids 
 #Ranganathan's Notes on SCA -- ordered according to the hash above
+#Would be interesting to see how this compares in prokaryotes versus eukaryotes
 BGQ = np.array([0.073, 0.025, 0.050, 0.061, 0.042, 0.072, 0.023, 0.053, 0.064, 0.089, 0.023, 0.043, 0.052, 0.040, 0.052, 0.073, 0.056, 0.063, 0.013, 0.033])
 
 #Takes a fasta formatted alignment file name and returns the corresponding numpy array
 def binMatrix(msaFN):
     headers, seqs = fasta.importFasta(msaFN)
     M = len(seqs)
+    # keep only sequences that have the largest length
     L = np.argmax(np.bincount(np.array([len(i) for i in seqs])))
     seqs = [i for i in seqs if len(i) == L]
     M = len(seqs)
@@ -88,6 +89,7 @@ def binMatrix(msaFN):
             print 'Sequence length: %s' %len(seqs[i])
     return mtx
 
+# Given a matrix, getModesFreqs will return the frequency and modes of all positions
 def getModesFreqs(mtx):
     P = np.shape(mtx)[1]
     m = np.zeros(P)

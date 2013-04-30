@@ -30,7 +30,8 @@ aminoAcids = [
     ]
 
 colors = ['tv_blue', 'tv_red', 'tv_green']
-    
+
+
 def eigenPainter(msaFN, chainID, vecs):
     vecs = [int(i) for i in vecs.split('+')]
     mtx = fullmsa.prune(fullmsa.binMatrix(msaFN), 1.)

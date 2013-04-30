@@ -2,6 +2,7 @@ from time import time
 from ctypes import *
 import numpy as np
 
+# create c-based matrix
 def cMtx(mtx):
     M, L = np.shape(mtx)
     arrayConstructor = c_int*L*M
@@ -9,16 +10,19 @@ def cMtx(mtx):
     msa = arrayConstructor(*tuple([rowConstructor(*tuple(mtx[i])) for i in range(M)]))
     return msa
 
+# convert c matrix back to numpy
 def convertCtoNumpy(X, Y, mtx):
     m = np.zeros([X,Y])
     for i in xrange(X):
         for j in xrange(Y):
             m[i,j] = mtx[i][j]
 
+# return the column-sum mutual information from covariance matrix
 def cMI(mtx):
     mi = inf(mtx)
     return np.sum(mi, axis = (0))
 
+# calculate mutual information
 def inf(mtx):
     start = time()
     M, L = np.shape(mtx)
@@ -46,7 +50,7 @@ def inf(mtx):
     print 'We are done in %s seconds' %(time() - start)
     return B
 
-
+# calculate joint entropy
 def jointH(mtx):
     start = time()
     M, L = np.shape(mtx)
