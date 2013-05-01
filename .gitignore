@@ -33,3 +33,10 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# For local alignment files
+*.fasta
+*.pdb
+
+# Interface testing
+interface.py

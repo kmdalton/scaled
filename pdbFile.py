@@ -1,5 +1,74 @@
 import numpy as np
 
+changeToOneLetter={
+'GLY':'G',
+'ALA':'A',
+'SER':'S',
+'CYS':'C',
+'VAL':'V',
+'THR':'T',
+'PRO':'P',
+'ILE':'I',
+'LEU':'L',
+'ASP':'D',
+'ASN':'N',
+'GLU':'E',
+'GLN':'Q',
+'MET':'M',
+'LYS':'K',
+'HIS':'H',
+'PHE':'F',
+'TYR':'Y',
+'ARG':'R',
+'TRP':'W'
+}
+
+#Maps amino acid names onto ints for the alignment matrix
+aaMapping = {
+    'A': 0,
+    'C': 1,
+    'D': 2,
+    'E': 3,
+    'F': 4,
+    'G': 5,
+    'H': 6,
+    'I': 7,
+    'K': 8,
+    'L': 9,
+    'M': 10,
+    'N': 11,
+    'P': 12,
+    'Q': 13,
+    'R': 14,
+    'S': 15,
+    'T': 16,
+    'V': 17,
+    'W': 18,
+    'Y': 19,
+    '-': 20,
+    '0' :'A',
+    '1' :'C',
+    '2' :'D',
+    '3' :'E',
+    '4' :'F',
+    '5' :'G',
+    '6' :'H',
+    '7' :'I',
+    '8' :'K',
+    '9' :'L',
+    '10':'M',
+    '11':'N',
+    '12':'P',
+    '13':'Q',
+    '14':'R',
+    '15':'S',
+    '16':'T',
+    '17':'V',
+    '18':'W',
+    '19':'Y',
+    '20':'-'
+}
+
 # ATOM object uses a PDB file line for construction
 class atom(dict):
     def __init__(self, line=None):
@@ -51,7 +120,8 @@ class pdbDB():
         self.chains[chainID][str(resNum)]['ATOMTYPE'] = atom
         if atomType == 'CA':
             self.alphas[chainID][str(resNum)] = atom
-    def calphaDistMat(self, chainID):
+            
+        def calphaDistMat(self, chainID):
         return distMat(self.alphas[chainID])
 
 # returns list of atom objects

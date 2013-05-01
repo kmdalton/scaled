@@ -77,7 +77,7 @@ def binMatrix(msaFN):
     M = len(seqs)
     # keep only sequences that have the largest length
     L = np.argmax(np.bincount(np.array([len(i) for i in seqs])))
-    seqs = [i for i in seqs if len(i) == L]
+    #seqs = [i for i in seqs if len(i) == L]
     M = len(seqs)
     mtx = 20*np.ones([M,L], dtype='int')
     for i in range(M):
@@ -101,6 +101,7 @@ def getModesFreqs(mtx):
     return m, f
 
 #Return a 3D representation of the alignment matrix
+#To include amino acid as the z dimension
 def extrudeBinMat(binMat):
     M,L = np.shape(binMat)
     new = np.zeros([M,L,21])
@@ -109,33 +110,40 @@ def extrudeBinMat(binMat):
             new[m,l,binMat[m,l]] = 1.
     return new
 
+# Gets the consensus sequence from alignment amtrix
 def consensus(mtx):
     m, f = getModesFreqs(mtx)
     return ''.join([aaMapping['%d'%i] for i in m])
 
+# prunes matrix of '-' consensus residues
 def prune(mtx, cut = 1.0):
     cols = columns(mtx, cut)
     return mtx[:,list(cols)]
 
+# prunes matrix of '-' consensus residues
+# I don't know what the difference is.
 def newPrune(mtx, cut = 0.98):
     m, f = getModesFreqs(mtx)
     gaps = np.where(m == 20)[0]
     cols = np.where(f > cut)[0]
     cols = set(range(np.shape(mtx)[1])) - (set(cols) & set(gaps))
-    cols = list(cols)
-    cols = sorted(cols)
+    cols = sorted(list(cols))
     return mtx[:,list(cols)]
 
+# Prunes matrix based on entropy cutoff
 def HPrune(mtx, cut = 1.0):
     H = Entropy(mtx)
     cols = np.where(H > cut)[0]
     return mtx[:,list(cols)]
 
+# returns columns which have a mode with frequence < cut (90% by default) 
+# and are not dominated by '-' modes.
 def columns(mtx, cut = 0.9):
     m, f = getModesFreqs(mtx)
     cols = set(np.where(f < cut)[0]).intersection(set(np.where(m != 20)[0]))
     return list(cols)
 
+# chunks listo into chunks chunk.
 def chunkify(listo, chunks):
     l = len(listo)
     ind = np.arange(chunks+1)*l/chunks
@@ -143,10 +151,12 @@ def chunkify(listo, chunks):
     listo = [listo[ind[i]:ind[i+1]] for i in range(chunks)]
     return listo
 
+# Creates a matrix weighted by 
 def weightrix(mtx):
     M,L = np.shape(mtx)
     D = np.ones([L,L])*DKL(mtx)
     return pinfwrapper.inf(mtx)/(1 + np.abs(D - D.T))
+
 
 def randomEigs(mtx, func = weightrix, numVecs = 10):
     m = deepcopy(mtx)
@@ -246,6 +256,7 @@ def alignRD(ats, R, atoms, chainID = 'A'):
     R = R[indices,:][:,indices]
     return R, D
 
+# returns population frequency of amino acids each residue position in mtx
 def columnPops(mtx):
     M,L = np.shape(mtx)
     pops = np.zeros([L, 21])
@@ -253,9 +264,12 @@ def columnPops(mtx):
         pops[i] = np.bincount(mtx[:,i], None, 21)
     return pops/float(M)
 
+# estimates background frequency of amino acids
 def estimateBGFreq(mtx):
     return np.bincount(mtx.flatten(), None, 21)/float(len(mtx.flatten()))
 
+# given a matrix of sequences, will return Kullback-Lieber Divergence
+# between background population and residue frequencies
 def DKL(mtx):
     M,L = np.shape(mtx)
     bgq = estimateBGFreq(mtx)
@@ -267,6 +281,7 @@ def DKL(mtx):
                 dkl[i] += np.log2(cpops[i,j]/bgq[j])*cpops[i,j]
     return dkl
 
+# 
 def testMetric(mtx):
     M,L = np.shape(mtx)
     H = np.ones([L,L])*Entropy(mtx)
@@ -275,7 +290,7 @@ def testMetric(mtx):
     T = mi*D*D.T/(H+H.T)
     return T
 
-
+# 
 def testMetric2(mtx):
     M,L = np.shape(mtx)
     H = np.ones([L,L])*Entropy(mtx)
@@ -378,4 +393,13 @@ def realDist(pdbFN, chainID, ats, mtx):
     indmtx = [i[0] for i in enumerate(ats) if i[1] in r]
     indd   = [i[0] for i in enumerate(r) if i[1] in ats]
     return d[indd][:,indd], mtx[indmtx][:,indmtx], r[indd]
+
+# Return sequence in letters given numbers
+def seq(mtx):
+    return [aaMapping[str(i)] for i in mtx if i!=20]
+
+# Return sequence indices in matrix (i.e. count the non-dash)
+def seqi(vec):
+    return np.nonzero(vec!=20)
+
 
