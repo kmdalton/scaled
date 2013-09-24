@@ -121,7 +121,7 @@ class pdbDB():
         if atomType == 'CA':
             self.alphas[chainID][str(resNum)] = atom
             
-        def calphaDistMat(self, chainID):
+    def calphaDistMat(self, chainID):
         return distMat(self.alphas[chainID])
 
 # returns list of atom objects
