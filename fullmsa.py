@@ -71,11 +71,13 @@ ordMapping[ord(' ')] = aaMapping['-']
 #Would be interesting to see how this compares in prokaryotes versus eukaryotes
 BGQ = np.array([0.073, 0.025, 0.050, 0.061, 0.042, 0.072, 0.023, 0.053, 0.064, 0.089, 0.023, 0.043, 0.052, 0.040, 0.052, 0.073, 0.056, 0.063, 0.013, 0.033])
 
+debug = 0
+
 #Takes a fasta formatted alignment file name and returns the corresponding numpy array
 def binMatrix(msaFN):
     headers, seqs = fasta.importFasta(msaFN)
     M = len(seqs)
-    # keep only sequences that have the largest length
+    # keep only sequences that have the mode length
     L = np.argmax(np.bincount(np.array([len(i) for i in seqs])))
     #seqs = [i for i in seqs if len(i) == L]
     M = len(seqs)
@@ -84,9 +86,11 @@ def binMatrix(msaFN):
         try:
             mtx[i,:len(seqs[i])] = ordMapping[[ord(j) for j in seqs[i].strip().upper()]]
         except ValueError:
+            # This is called when the size of the matrix isn't the same.
             pass
-            print 'Failure parsing sequence with header: %s' %headers[i]
-            print 'Sequence length: %s' %len(seqs[i])
+            if (debug==1):
+                print 'Failure parsing sequence with header: %s' %headers[i]
+                print 'Sequence length: %s' %len(seqs[i])
     return mtx
 
 # Given a matrix, getModesFreqs will return the frequency and modes of all positions
