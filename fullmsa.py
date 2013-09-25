@@ -244,6 +244,7 @@ def prune2D(mtx, cut = 1.):
     print '%s rows' %len(rows)
     return mtx[rows]
 
+# Shannon entropy
 def Entropy(mtx):
     M, L = np.shape(mtx)
     H = np.zeros(L)
@@ -296,6 +297,18 @@ def estimateBGFreq(mtx):
 def DKL(mtx):
     M,L = np.shape(mtx)
     bgq = estimateBGFreq(mtx)
+    cpops = columnPops(mtx)
+    dkl = np.zeros(L)
+    for i in range(L):
+        for j in range(21):
+            if bgq[j] > 0. and cpops[i,j] > 0.:
+                dkl[i] += np.log2(cpops[i,j]/bgq[j])*cpops[i,j]
+    return dkl
+
+# Same as DKL() but accepts second argument with custom background aa frequencies 
+def DKL2(mtx,bgq):
+    M,L = np.shape(mtx)
+#    bgq = estimateBGFreq(mtx)
     cpops = columnPops(mtx)
     dkl = np.zeros(L)
     for i in range(L):
