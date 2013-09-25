@@ -51,6 +51,9 @@ changeToOneLetter={
 def align(seq1, seq2, ID = 1):
     # write two temporary files with seq1 and seq2
     # importantly, these sequences will be prefaced by >seq1\n and >seq2\n respectively
+    print seq1
+    print '>seq2\n%s\n' %seq2
+    
     s = open('.tmp.seq1.%s' %ID, 'w')
     s.write('>seq1\n%s\n' %seq1)
     s.close()
@@ -58,9 +61,18 @@ def align(seq1, seq2, ID = 1):
     s.write('>seq2\n%s\n' %seq2)
     s.close()
 
+    
+    
     # Submit files to Emboss Water alignment (using Smith-Waterman algorithm)
-    aln = Bio.Emboss.Applications.WaterCommandline(asequence='.tmp.seq1.%s' %ID, bsequence='.tmp.seq2.%s' %ID, gapopen=10, gapextend=0.5, outfile='stdout',stdout=True)
-    aln, err = aln()
+    aln = Bio.Emboss.Applications.WaterCommandline(asequence=os.path.realpath('.tmp.seq1.%s' %ID), bsequence=os.path.realpath('.tmp.seq2.%s' %ID), gapopen=10, gapextend=0.5, outfile='stdout',stdout=True)
+
+    try:
+        aln, err = aln()
+    except Bio.Application.ApplicationError:
+        aln = []
+        print "Error in Emboss alignment. Is it installed?"
+        
+        
 
     # Delete temporary files
     os.remove('.tmp.seq1.%s' %ID)
