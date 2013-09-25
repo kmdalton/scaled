@@ -86,7 +86,7 @@ def binMatrix(msaFN):
         try:
             mtx[i,:len(seqs[i])] = ordMapping[[ord(j) for j in seqs[i].strip().upper()]]
         except ValueError:
-            # This is called when the size of the matrix isn't the same.
+            # This is called when the size of the matrix is too small
             pass
             if (debug==1):
                 print 'Failure parsing sequence with header: %s' %headers[i]
