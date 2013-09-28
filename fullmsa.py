@@ -93,6 +93,14 @@ def binMatrix(msaFN):
                 print 'Sequence length: %s' %len(seqs[i])
     return mtx
 
+# builds binary Rama matrix
+def binMatrix3D(mtx):
+    mtx3d = np.zeros(mtx.shape+(21,))
+    for (i,j) in zip(range(mtx3d.shape[0]),range(mtx3d.shape[1])):
+        mtx3d[i,j,mtx[i,j]] = 1
+    return mtx3d
+    
+    
 # Given a matrix, getModesFreqs will return the frequency and modes of all positions
 def getModesFreqs(mtx):
     P = np.shape(mtx)[1]
