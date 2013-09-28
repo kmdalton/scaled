@@ -1,6 +1,8 @@
 from time import time
 from ctypes import *
 import numpy as np
+import os
+
 
 # C matrix
 def cMtx(mtx):
@@ -24,7 +26,8 @@ def cMI(mtx):
 def inf(mtx):
     start = time()
     M, L = np.shape(mtx)
-    lib = '/home/kmdalton/Sequences/plot/joint.so'
+    curpwd = os.getcwd()
+    lib = curpwd+r'/joint.so'
     dll = cdll.LoadLibrary(lib)
     Cij = dll.Cij
     Cij.restype = c_voidp

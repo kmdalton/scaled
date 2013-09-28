@@ -1,6 +1,7 @@
 from time import time
 from ctypes import *
 import numpy as np
+import os
 
 # create c-based matrix
 def cMtx(mtx):
@@ -26,7 +27,8 @@ def cMI(mtx):
 def inf(mtx):
     start = time()
     M, L = np.shape(mtx)
-    lib = 'pinf.so'
+    curpwd = os.getcwd()
+    lib = curpwd+r'/pinf.so'
     dll = cdll.LoadLibrary(lib)
     Cij = dll.Cij
     Cij.restype = c_voidp
@@ -54,7 +56,8 @@ def inf(mtx):
 def jointH(mtx):
     start = time()
     M, L = np.shape(mtx)
-    lib = 'joint.so'
+    curpwd = os.getcwd()
+    lib = curpwd+r'/joint.so'
     dll = cdll.LoadLibrary(lib)
     Cij = dll.Cij
     Cij.restype = c_voidp
