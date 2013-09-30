@@ -164,7 +164,7 @@ def sca5(mtx,bgq):
     Cp = np.abs((pwX.T*pwX)/nseq-np.mean(pwX,axis=0).T*np.mean(pwX,axis=0))
     Cs = np.abs((pwX*pwX.T)/npos-np.mean(pwX.T,axis=0).T*np.mean(pwX.T,axis=0))
 
-    return Cp,Cs
+    return Cp,Cs,pwX
 
     
 # return frequency for all aa in  all positions
