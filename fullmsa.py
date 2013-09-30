@@ -93,14 +93,91 @@ def binMatrix(msaFN):
                 print 'Sequence length: %s' %len(seqs[i])
     return mtx
 
-# builds binary Rama matrix
+# builds binary Rama matrix (20 aa, no gap)
 def binMatrix3D(mtx):
-    mtx3d = np.zeros(mtx.shape+(21,))
-    for (i,j) in zip(range(mtx3d.shape[0]),range(mtx3d.shape[1])):
-        mtx3d[i,j,mtx[i,j]] = 1
+    mtx3d = np.zeros(mtx.shape+(20,))
+
+    for i in range(mtx3d.shape[0]):
+        for j in range(mtx3d.shape[1]):
+            if mtx[i,j] != 20:
+                mtx3d[i,j,mtx[i,j]] = 1.0
     return mtx3d
     
+# python transcription of weight_aln.m 
+def weightMatrix(mtx3d,bgq):
+    nseq,npos,naa = mtx3d.shape
     
+    mtx3d_mat = np.reshape(mtx3d.transpose(2,1,0),(naa*npos,nseq),order='F')
+    f1_v =np.sum(mtx3d_mat.T,axis=0)/nseq
+    w_v = np.squeeze(np.ones((1,naa*npos)))
+    q1_v = np.squeeze(np.tile(bgq,(1,npos)))
+
+    for x in range(naa*npos):
+        q = q1_v[x]
+        f = f1_v[x]
+        # here I hard coded their metric DerivEntropy
+        if f > 0 and f < 1:
+            w_v[x] = np.abs(np.log(f*(1-q)/(q*(1-f))))
+        else: 
+            w_v[x] = 0.
+
+    W = np.zeros((npos,naa))
+    for i in range(npos):
+        for j in range(naa):
+            W[i,j] = w_v[naa*i+j]
+            
+    Wx = np.tile(np.reshape(W,(1, npos, naa),order='F'),(nseq,1,1))*mtx3d
+
+    return Wx,W
+                 
+def project_aln(aln,Wx,W):
+    nseq,npos,naa = Wx.shape
+    f = getModesFreqs2D(aln)
+    
+    p_wf = np.zeros((npos,naa))
+    wf = np.zeros((naa,npos))
+    
+    for i in range(npos):
+        for j in range(naa):
+            wf[j,i] = W[i,j]*f[i,j]
+        if np.linalg.norm(wf[:,i])>0: 
+            p_wf[i,:] = wf[:,i]/np.linalg.norm(wf[:,i])
+
+    pwX_wf = np.zeros((nseq,npos))
+    
+    for i in range(npos):
+        for j in range(naa):
+            pwX_wf[:,i] = pwX_wf[:,i]+p_wf[i,j]*Wx[:,i,j]
+
+    return pwX_wf,p_wf        
+
+# sca5.m
+def sca5(mtx,bgq):
+    nseq,npos = mtx.shape
+
+    mtx3d = binMatrix3D(mtx)
+    Wx,W = weightMatrix(mtx3d,bgq)
+
+    pwX,pm = project_aln(mtx,Wx,W)
+    
+    pwX = np.matrix(pwX)
+    Cp = np.abs((pwX.T*pwX)/nseq-np.mean(pwX,axis=0).T*np.mean(pwX,axis=0))
+    Cs = np.abs((pwX*pwX.T)/npos-np.mean(pwX.T,axis=0).T*np.mean(pwX.T,axis=0))
+
+    return Cp,Cs
+
+    
+# return frequency for all aa in  all positions
+def getModesFreqs2D(mtx):
+    P = np.shape(mtx)[1]
+    f2d = np.zeros((P,20))
+
+    for i in range(P):
+        bins = np.bincount(mtx[:,i])
+        for j in range(np.min([bins.size,20])):
+            f2d[i,j] = float(bins[j])/np.sum(bins)
+    return f2d
+
 # Given a matrix, getModesFreqs will return the frequency and modes of all positions
 def getModesFreqs(mtx):
     P = np.shape(mtx)[1]
