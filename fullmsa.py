@@ -191,20 +191,15 @@ def getModesFreqs(mtx):
 
 # returns a matrix of similarity for an alignment matrix where the sequences are rows
 def simseq(mtx):
-    M = np.zeros((mtx.shape[0],mtx.shape[0]))
-    # Firt we sort by similarity to the sequence mode.
+    nseq,npos = mtx.shape
+    msa = np.zeros((nseq,20*npos))
 
-    s = np.zeros(mtx.shape[0])
-    concseq, f = getModesFreqs(mtx)
-    for idx in np.arange(M.shape[0]):
-        s[idx] = np.mean(np.equal(mtx[idx,:],concseq))
-    
-    sorder = sorted(range(s.size),key=lambda k:s[k])
-    sorder = sorder[::-1]
+    for p in np.arange(npos):
+        for a in np.arange(20):
+            msa[:,20*p+a] = np.where(mtx[:,p]==a,1,0)
 
-    for idx in np.arange(M.shape[0]):
-        for idy in np.arange(M.shape[0]):
-            M[idx,idy] = np.mean(np.equal(mtx[sorder[idx],:],mtx[sorder[idy],:]))
+    msa = np.matrix(msa)
+    M = msa*msa.T/npos
     return M
 
     
