@@ -5,6 +5,8 @@ def importFasta(fastaFN):
     lines = open(fastaFN, 'r').readlines()
     headers = []
     seq = []
+    # TODO: This method could be improved by using filename as format hint
+
     # Check for .free or .clustal filetype.o
     # No idea what .free format is -- just going off of what comes in the Input
     # folder of sca5 files.
@@ -22,6 +24,12 @@ def importFasta(fastaFN):
             headers.append(splitline[0])
             seq.append('')
             seq[-1] = seq[-1] + splitline[1]
+    else: 
+        # Other free possibility: last 
+        for line in lines:
+            splitline = line.split()
+            seq.append('')
+            seq[-1] = seq[-1] + splitline[0]
     return headers, seq
 
 def writeFasta(fastaFN, orgs, param = 'SEQUENCE'):
