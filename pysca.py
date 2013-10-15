@@ -18,20 +18,17 @@ def gappyRegister(consensus, seq, resNums):
     return np.array(ats)
 
 # returns relative sequence of aligned sequences
-# Repeated in water.py
 def register(consensus, seq, resNums):
-
     aln = water.align(consensus, seq).split('\n')
     for line in aln: print line
-    aln = [i for i in aln if i[:3] == 'seq']
-    s1 = ''
-    s2 = ''
-    for i in  [j for j in aln if j[:4] == 'seq1']:
-        s1 = s1 + re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', i)
-    for i in  [j for j in aln if j[:4] == 'seq2']:
-        s2 = s2 + re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', i)
-    x = int(aln[0].split()[1])
-    y = int(aln[1].split()[1])
+    aln = [i for i in aln if len(i) > 2 and i[0] != '#']
+    l = len(aln)
+    s1 = ''.join([aln[3*i] for i in range(l/3)])
+    s1 = re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', s1)
+    s2 = ''.join([aln[3*i+2] for i in range(l/3)])
+    s2 = re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', s2)
+    print aln
+    x = int(aln[0].split()[0]) y = int(aln[2].split()[0])
     ats = [None for i in range(len(consensus)+1)]
     print consensus
     print seq
@@ -48,30 +45,3 @@ def register(consensus, seq, resNums):
             y += 1
     return np.array(ats)
 
-# No idea what this does. 
-def IDSectors(v, **kwargs):
-    cut, sec = 0.1, 3 
-    if 'cut' in kwargs:
-        cut = kwargs['cut']
-    if 'sectors' in kwargs:
-        sec = int(kwargs['sectors'])
-    m = [np.median(i) for i in v]
-    s = []
-    for vec, med in zip(v,m):
-        if len(s) < sec:
-            if med>0:
-                t = sorted(vec)[int((1-cut)*len(vec))]
-                s.append(np.where(vec > t)[0])
-            elif med<0:
-                t = sorted(vec)[int(cut*len(vec))]
-                s.append(np.where(vec < t)[0])
-    return s
-
-#Usage: doICA(matrix, list of desired eigenvector indices)
-#returns: tuple of eigenvectors projected on ICA axes number of input vectors == number of returned vecs
-def doICA(mtx, vecs):
-    vec = np.real(np.asarray(np.linalg.eig(mtx)[1][:,vecs]))
-    ica = ICANode()
-    ica.train(vec)
-    ivec = ica(vec)
-    return tuple([ivec[:,i] for i in range(len(vecs))])

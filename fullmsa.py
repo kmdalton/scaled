@@ -152,7 +152,8 @@ def project_aln(aln,Wx,W):
     return pwX_wf,p_wf        
 
 # sca5.m
-def sca5(mtx,bgq):
+def sca5(mtx, **kwargs):
+    bgq = kwargs.get('bgq', estimateBGFreq(mtx))
     nseq,npos = mtx.shape
 
     mtx3d = binMatrix3D(mtx)
