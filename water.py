@@ -5,6 +5,7 @@ import Bio.Emboss.Applications
 import pickle
 import numpy as np
 import string
+import subprocess
 
 Greek = {
     '1':'A',

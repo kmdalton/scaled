@@ -3,6 +3,9 @@ from ctypes import *
 import numpy as np
 import os
 
+#This tells the script where to find the C-libraries
+directoryPrefix = '/'.join(__file__.split('/')[:-1]) + '/'
+
 # create c-based matrix
 def cMtx(mtx):
     M, L = np.shape(mtx)
@@ -27,7 +30,7 @@ def cMI(mtx):
 def inf(mtx):
     start = time()
     M, L = np.shape(mtx)
-    lib = 'pinf.so'
+    lib = directoryPrefix + 'pinf.so'
     dll = cdll.LoadLibrary(lib)
     Cij = dll.Cij
     Cij.restype = c_voidp
@@ -55,7 +58,7 @@ def inf(mtx):
 def jointH(mtx):
     start = time()
     M, L = np.shape(mtx)
-    lib = 'joint.so'
+    lib = directoryPrefix + 'joint.so'
     dll = cdll.LoadLibrary(lib)
     Cij = dll.Cij
     Cij.restype = c_voidp
