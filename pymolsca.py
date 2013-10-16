@@ -1,7 +1,6 @@
 from pymol import cmd, stored
 from matplotlib import cm
 from sklearn.decomposition import fastica
-import infwrapper
 import water
 import fullmsa
 import numpy as np
@@ -66,8 +65,6 @@ def icaPainter(msaFN, chainID, ncomps = 5):
     mtx = fullmsa.prune(fullmsa.binMatrix(msaFN), 1.)
     #mtx = fullmsa.prune(fullmsa.binMatrix(msaFN), 1.)
     R = fullmsa.infoDistance(mtx)
-    #R = fullmsa.testMetric2(mtx)
-    #mi = infwrapper.inf(mtx)
     ica = fastica(R, n_components=ncomps)[0]
     resNums, chainSeq = chainFromPymol(chainID.split('+')[0])
     ats = water.gappyRegister(fullmsa.consensus(mtx), chainSeq, resNums)

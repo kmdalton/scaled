@@ -27,7 +27,6 @@ def cMI(mtx):
 def inf(mtx):
     start = time()
     M, L = np.shape(mtx)
-    curpwd = os.getcwd()
     lib = 'pinf.so'
     dll = cdll.LoadLibrary(lib)
     Cij = dll.Cij
@@ -56,7 +55,6 @@ def inf(mtx):
 def jointH(mtx):
     start = time()
     M, L = np.shape(mtx)
-    curpwd = os.getcwd()
     lib = 'joint.so'
     dll = cdll.LoadLibrary(lib)
     Cij = dll.Cij
