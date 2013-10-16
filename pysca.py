@@ -28,7 +28,8 @@ def register(consensus, seq, resNums):
     s2 = ''.join([aln[3*i+2] for i in range(l/3)])
     s2 = re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', s2)
     print aln
-    x = int(aln[0].split()[0]) y = int(aln[2].split()[0])
+    x = int(aln[0].split()[0]) 
+    y = int(aln[2].split()[0])
     ats = [None for i in range(len(consensus)+1)]
     print consensus
     print seq
