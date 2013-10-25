@@ -7,6 +7,9 @@ import numpy as np
 import string
 import subprocess
 
+#This tells the script where to find the sequences database
+directoryPrefix = '/'.join(__file__.split('/')[:-1]) + '/'
+
 Greek = {
     '1':'A',
     '2':'B',
@@ -173,13 +176,19 @@ def register(consensus, seq, resNums):
     return np.array(ats)
 
 
+
 # Use hmmer to pull out similar protein sequences
 # Two arguments, a protein seq as a string and an
 # output filename for a stockholm sequence alignment
-def phmmer(tarseq, outfile):
+def phmmer(tarseq, **kw):
     """Make an external call to phmmer. One argument, first argument is the string representing the amino acid sequence you would like to find homologs to. Returns a tuple containing two lists. The first list is the sequence headers, the second is a list of homologous sequences to the query."""
-    p = subprocess.Popen(["phmmer", "-E", "1e-5", "-A", "/dev/stdout/", "-o", "/dev/null", "-", "nr"], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    #TODO: test to see if this file exists!!!!
+    databaseFN = kw.get('db', directoryPrefix + 'nr')
+
+    p = subprocess.Popen(["phmmer", "-E", "1e-5", "-A", "/dev/stdout", "-o", "/dev/null", "-", databaseFN], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     lines = p.communicate(input=">tarSeq\n%s\n" %tarseq)[0]
+    lines = lines.split("\n")
     seqs = {}
     headers = [] #Keep an ordered record of the alignment members
     for line in lines:
@@ -202,5 +211,4 @@ def phmmer(tarseq, outfile):
                 print "%s : %s"%(seqname, seq)
     #Return two tuples, first the headers and then the corresponding sequences
     return headers, [seqs[i] for i in headers]
-
 
