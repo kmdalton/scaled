@@ -173,3 +173,34 @@ def register(consensus, seq, resNums):
     return np.array(ats)
 
 
+# Use hmmer to pull out similar protein sequences
+# Two arguments, a protein seq as a string and an
+# output filename for a stockholm sequence alignment
+def phmmer(tarseq, outfile):
+    """Make an external call to phmmer. One argument, first argument is the string representing the amino acid sequence you would like to find homologs to. Returns a tuple containing two lists. The first list is the sequence headers, the second is a list of homologous sequences to the query."""
+    p = subprocess.Popen(["phmmer", "-E", "1e-5", "-A", "/dev/stdout/", "-o", "/dev/null", "-", "nr"], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    lines = p.communicate(input=">tarSeq\n%s\n" %tarseq)[0]
+    seqs = {}
+    headers = [] #Keep an ordered record of the alignment members
+    for line in lines:
+        if line[0] != '#' and len(line.split()) > 1:
+            try:
+                line = line.strip().split()
+                seqname = line[0]
+                seq = line[-1]
+                seq = seq.upper()
+                #Ditch insane characters for safety
+                seq = re.sub(r'[^-\.GASCVTPILDNEQMKHFYRW]', '', seq)
+                #Pysca doesn't use dots for gaps -- only dashes
+                seq = re.sub(r'[\.]', '-', seq)
+                if seqname in seqs:
+                    seqs[seqname] = seqs[seqname] + seq
+                else:
+                    seqs[seqname] = seq
+                    headers.append(seqname)
+            except:
+                print "%s : %s"%(seqname, seq)
+    #Return two tuples, first the headers and then the corresponding sequences
+    return headers, [seqs[i] for i in headers]
+
+
