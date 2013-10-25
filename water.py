@@ -192,16 +192,14 @@ def phmmer(tarseq, **kw):
     seqs = {}
     headers = [] #Keep an ordered record of the alignment members
     for line in lines:
-        if line[0] != '#' and len(line.split()) > 1:
+        if len(line.split()) > 1 and line[0] != '#':
             try:
                 line = line.strip().split()
                 seqname = line[0]
                 seq = line[-1]
-                seq = seq.upper()
-                #Ditch insane characters for safety
-                seq = re.sub(r'[^-\.GASCVTPILDNEQMKHFYRW]', '', seq)
-                #Pysca doesn't use dots for gaps -- only dashes
-                seq = re.sub(r'[\.]', '-', seq)
+                seq = seq.upper() #SAFETY FIRST!
+                #Ditch insane characters and gaps
+                seq = re.sub(r'[^GASCVTPILDNEQMKHFYRW]', '', seq)
                 if seqname in seqs:
                     seqs[seqname] = seqs[seqname] + seq
                 else:
