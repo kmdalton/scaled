@@ -1,10 +1,13 @@
 from time import time
 from ctypes import *
 import numpy as np
-import os
+import os,sys
 
 #This tells the script where to find the C-libraries
-directoryPrefix = '/'.join(__file__.split('/')[:-1]) + '/'
+directoryPrefix =  os.path.abspath(os.path.dirname(sys.argv[0]))+'/'
+
+if directoryPrefix == '/':
+    directoryPrefix = os.path.abspath(os.path.dirname(__file__))+'/'
 
 # create c-based matrix
 def cMtx(mtx):
