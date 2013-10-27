@@ -95,6 +95,12 @@ def binMatrix(msaFN):
 
 # builds binary Rama matrix (20 aa, no gap)
 def binMatrix3D(mtx):
+    """Returns mtx (m by n) as a binary matrix n by m by 20
+    with each column of the third dimension equal to zero except 
+    at index mtx(i,j), where it equals unity.
+
+    Helper function of Rama Ranganathan MATLAB sca5 function. 
+    """
     mtx3d = np.zeros(mtx.shape+(20,))
 
     for i in range(mtx3d.shape[0]):
@@ -105,6 +111,12 @@ def binMatrix3D(mtx):
     
 # python transcription of weight_aln.m 
 def weightMatrix(mtx3d,bgq):
+    """
+    Calculation of weight tensor, which replaces unity values in
+    mtx3d with the positions relative entropy. 
+
+    Helper function of Rama Ranganathan MATLAB sca5 function. 
+    """
     nseq,npos,naa = mtx3d.shape
     
     mtx3d_mat = np.reshape(mtx3d.transpose(2,1,0),(naa*npos,nseq),order='F')
@@ -131,6 +143,11 @@ def weightMatrix(mtx3d,bgq):
     return Wx,W
                  
 def project_aln(aln,Wx,W):
+    """
+    Calculation of 2D weight matrix.
+
+    Helper function of Rama Ranganathan MATLAB sca5 function. 
+    """
     nseq,npos,naa = Wx.shape
     f = getModesFreqs2D(aln)
     
@@ -153,6 +170,14 @@ def project_aln(aln,Wx,W):
 
 # sca5.m
 def sca5(mtx, **kwargs):
+    """
+    Calculates evolutionary covariance matrix according to 
+    Rama Ranganathan MATLAB sca5 function, using the relative
+    entropy of each sequence and position.
+
+    Returns position covariance and sequence covariance, as well as 
+    raw weight matrix.
+    """
     bgq = kwargs.get('bgq', estimateBGFreq(mtx))
     nseq,npos = mtx.shape
 
