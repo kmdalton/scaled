@@ -231,6 +231,7 @@ def simseq(mtx):
     
 #Return a 3D representation of the alignment matrix
 #To include amino acid as the z dimension
+#Is this matrix now redundant?
 def extrudeBinMat(binMat):
     M,L = np.shape(binMat)
     new = np.zeros([M,L,21])
@@ -238,6 +239,11 @@ def extrudeBinMat(binMat):
         for l in range(L):
             new[m,l,binMat[m,l]] = 1.
     return new
+
+def resample(mtx):
+    """ Returns mtx with rows (sequences) randomly resampled."""
+    mtxrand = np.matrix([mtx[i,:] for i in np.random.randint(mtx.shape[0],size=mtx.shape[0])])
+    return mtxrand
 
 # Gets the consensus sequence from alignment amtrix
 def consensus(mtx):
