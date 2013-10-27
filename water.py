@@ -210,3 +210,24 @@ def phmmer(tarseq, **kw):
     #Return two tuples, first the headers and then the corresponding sequences
     return headers, [seqs[i] for i in headers]
 
+def clustalo(headers, sequences):
+    """Make an external call to clustal omega. Supply two iterables containing strings. First iterable is fasta headers, second is the corresponding sequences. They must be the same length. Returns two tuples containing (1) fasta formatted headers and (2) corresponding sequences gapped as per the alignment."""
+
+    #Just some safety checks to make sure we don't end up with weird line spacing
+    headers = [i.strip() for i in headers]
+    sequences = [i.strip() for i in sequences]
+
+    #Interleave the two lists using fancy extended slice syntax :)
+    fastaFile = headers + sequences
+    fastaFile[::2] = headers
+    fastaFile[1::2] = sequences
+    fastaFile = '\n'.join(fastaFile)
+
+    p = subprocess.Popen(["clustalo", "-i", "-"], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    lines = p.communicate(input=fastaFile)[0]
+
+    #I apologize for the unintelligibility of these lines. I promise they'll work fine as long as the fasta format doesn't change.
+    newHeaders  = [">" + i.split('\n')[0] for i in lines.split(">")[1:]] #Pull out the headers
+    alignedSeqs = [''.join(i.split('\n')[1:]) for i in lines.split(">")[1:]] #Pull out the gapped sequences
+
+    return newHeaders, alignedSeqs
