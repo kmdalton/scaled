@@ -6,6 +6,9 @@ import os,sys
 #This tells the script where to find the C-libraries
 directoryPrefix =  os.path.abspath(os.path.dirname(sys.argv[0]))+'/'
 
+if directoryPrefix == '/':
+    directoryPrefix = os.path.abspath(os.path.dirname(__file__))+'/'
+
 # create c-based matrix
 def cMtx(mtx):
     M, L = np.shape(mtx)
