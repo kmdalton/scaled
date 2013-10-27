@@ -7,17 +7,20 @@ from subprocess import call
 
 
 #Download the nr database from ncbi
-def downloadNR(dbFilename):
+def downloadNR():
+"""Download the nr database from ncbi in fasta format from their ftp server. Automatically decrompresses the archive and leaves it named 'nr'"""
     ftp = FTP('ftp.ncbi.nlm.nih.gov')
     ftp.login()
     ftp.cwd('blast/db/FASTA')
-    ftp.retrbinary('RETR nr.gz', open(dbFilename, 'wb').write)
+    ftp.retrbinary('RETR nr.gz', open('tmp.gz', 'wb').write)
+    call(['gunzip', 'nr.gz'])
 
 def compileCLibs():
+"""Compile the pysca C-libraries. Requires gcc. Must be called from the pysca root directory."""
     call(['gcc', '-std=c99', '-fPIC', '-shared', '-fopenmp', '-o', 'joint.so', 'joint.c'])
     call(['gcc', '-std=c99', '-fPIC', '-shared', '-fopenmp', '-o', 'pinf.so', 'pinf.c'])
 
 
 if __name__=="__main__":
     compileCLibs()
-    downloadNR('nr.gz')
+    downloadNR()
