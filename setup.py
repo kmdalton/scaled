@@ -8,7 +8,7 @@ from subprocess import call
 
 #Download the nr database from ncbi
 def downloadNR():
-"""Download the nr database from ncbi in fasta format from their ftp server. Automatically decrompresses the archive and leaves it named 'nr'"""
+"""Download the nr database from ncbi in fasta format from their ftp server. Automatically decrompresses the archive and leaves it named 'nr'. Requires gunzip!"""
     ftp = FTP('ftp.ncbi.nlm.nih.gov')
     ftp.login()
     ftp.cwd('blast/db/FASTA')
@@ -23,4 +23,4 @@ def compileCLibs():
 
 if __name__=="__main__":
     compileCLibs()
-    downloadNR()
+    #downloadNR() -- comment this out for the disk space. TODO: argparse flag to activate this.

@@ -8,7 +8,7 @@ import string
 import subprocess
 
 #This tells the script where to find the sequences database
-directoryPrefix = '/'.join(__file__.split('/')[:-1]) + '/'
+directoryPrefix = os.path.dirname(os.path.abspath(__file__)) + '/'
 
 Greek = {
     '1':'A',
