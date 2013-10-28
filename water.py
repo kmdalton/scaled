@@ -231,3 +231,11 @@ def clustalo(headers, sequences):
     alignedSeqs = [''.join(i.split('\n')[1:]) for i in lines.split(">")[1:]] #Pull out the gapped sequences
 
     return newHeaders, alignedSeqs
+
+def cullByLength(headers, seqs, length, **kw):
+    """Prune a set of fasta headers, sequences to remove outside a percentage of the target length. Call as cullByLength(fasta headers (iterable), fasta sequences (iterable), target length (int), *kw). Set the threshold by supplying thresh=float. Thresh must be betwen 0 & 1 -- default is 0.1. Returns: (list of headers, list of sequences). returned sequences have length > length-thresh*length and < length+thresh*length"""
+    thresh = kw.get('thresh', 0.1)
+    lmin   = length - thresh*length
+    lmax   = length + thresh*length
+    culled = [seq for seq in zip(h,s) if seq[1] > lmin and seq[1] < lmax]
+    return zip(*culled)
