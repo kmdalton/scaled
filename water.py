@@ -195,7 +195,7 @@ def phmmer(tarseq, **kw):
         if len(line.split()) > 1 and line[0] != '#':
             try:
                 line = line.strip().split()
-                seqname = line[0]
+                seqname = '>' + line[0] #Prepend the > so you're in fasta format
                 seq = line[-1]
                 seq = seq.upper() #SAFETY FIRST!
                 #Ditch insane characters and gaps
@@ -222,9 +222,11 @@ def clustalo(headers, sequences):
     fastaFile[::2] = headers
     fastaFile[1::2] = sequences
     fastaFile = '\n'.join(fastaFile)
+    print fastaFile
 
     p = subprocess.Popen(["clustalo", "-i", "-"], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     lines = p.communicate(input=fastaFile)[0]
+    print lines
 
     #I apologize for the unintelligibility of these lines. I promise they'll work fine as long as the fasta format doesn't change.
     newHeaders  = [">" + i.split('\n')[0] for i in lines.split(">")[1:]] #Pull out the headers
