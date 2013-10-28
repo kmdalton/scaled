@@ -6,15 +6,6 @@ import os,sys
 #Find the dynamic C-libs in the same directory as this file
 directoryPrefix = os.path.abspath(os.path.dirname(__file__))+'/'
 
-
-#TODO: Alex, this breaks the libraries on my machines. What is the
-#motivation for doing it this way?
-#This tells the script where to find the C-libraries
-#directoryPrefix =  os.path.abspath(os.path.dirname(sys.argv[0]))+'/'
-#
-#if directoryPrefix == '/':
-#    directoryPrefix = os.path.abspath(os.path.dirname(__file__))+'/'
-
 # create c-based matrix
 def cMtx(mtx):
     M, L = np.shape(mtx)
