@@ -237,5 +237,5 @@ def cullByLength(headers, seqs, length, **kw):
     thresh = kw.get('thresh', 0.1)
     lmin   = length - thresh*length
     lmax   = length + thresh*length
-    culled = [seq for seq in zip(h,s) if seq[1] > lmin and seq[1] < lmax]
+    culled = [seq for seq in zip(headers, seqs) if len(seq[1]) > lmin and len(seq[1]) < lmax]
     return zip(*culled)
