@@ -73,13 +73,10 @@ BGQ = np.array([0.073, 0.025, 0.050, 0.061, 0.042, 0.072, 0.023, 0.053, 0.064, 0
 
 debug = 0
 
-#Takes a fasta formatted alignment file name and returns the corresponding numpy array
-def binMatrix(msaFN):
-    headers, seqs = fasta.importFasta(msaFN)
-    M = len(seqs)
+#Takes a iterable of aligned sequences and returns the corresponding numpy array
+def binMatrix(seqs):
     # keep only sequences that have the mode length
     L = np.argmax(np.bincount(np.array([len(i) for i in seqs])))
-    #seqs = [i for i in seqs if len(i) == L]
     M = len(seqs)
     mtx = 20*np.ones([M,L], dtype='int')
     for i in range(M):
