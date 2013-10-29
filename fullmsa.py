@@ -6,6 +6,8 @@ from copy import deepcopy
 from time import time
 from multiprocessing import cpu_count
 import pinfwrapper
+from sklearn.decomposition import fastica
+from scipy.stats import t
 
 #Includes the gap character!
 AminoAcids = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y','-']
@@ -274,17 +276,17 @@ def topt(icm,cutoff=.05):
     """ Returns cluster by fitting t-test and returning residues above cutoff """
     
     param = t.fit(icm,loc=np.median(icm))
-    x = np.linspace(-.5,.5,200)
+    x = np.linspace(-1,1,200)
     cdf = t.cdf(x,param[0],loc=param[1], scale=param[2])
 
-    minx = np.max(x[find(cdf<cutoff)])
+    minx = np.max(x[np.nonzero(cdf<cutoff)])
 
     # deal with direction of tail:
-    if icm[find(np.abs(samp)==np.max(np.abs(samp)))]<0:
-        cursect = (find(samp<minx)).T
+    if icm[np.nonzero(np.abs(icm)==np.max(np.abs(icm)))]<0:
+        cursect = np.array([i for i in range(icm.size) if icm[i]<minx])
     else:
-        maxx = np.min(x[find(cdf>(1-cutoff))])
-        cursect = (find(samp>maxx)).T
+        maxx = np.min(x[np.nonzero(cdf>(1-cutoff))])
+        cursect = np.array([i for i in range(icm.size) if icm[i]>maxx])
         
     return cursect
 
