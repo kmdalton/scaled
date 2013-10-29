@@ -241,10 +241,10 @@ def extrudeBinMat(binMat):
 
 def resample(mtx):
     """ Returns mtx with rows (sequences) randomly resampled."""
-    mtxrand = np.matrix([mtx[i,:] for i in np.random.randint(mtx.shape[0],size=mtx.shape[0])])
+    mtxrand = np.array([mtx[i,:] for i in np.random.randint(mtx.shape[0],size=mtx.shape[0])])
     return mtxrand
 
-def booty(ic,mtx):
+def booty(ic,mtx,iternumfactor=4):
     """ 
     Calculates confidence of IC, and residues in IC via bootstrapping.
     
@@ -254,11 +254,34 @@ def booty(ic,mtx):
     booty returns a single matrix of same size as ic, with each column
     containing values of confidences for each residue, which, when summed, 
     represents the confidence of the IC (between zero and one).
+    
+    iternumfactor determined the number of bootstraps as
+    the times TIMES the number of columns in ic.
 
     The cluster can then be extracted from each column.
     """
+    tokeep = ic.shape[1]
+    numiter = int(iternumfactor*mtx.shape[1])
+    icConf = np.zeros(ic.shape)
+    
+    # the appended t on variables stands for temp.
+    for l in range(numiter):
+        # generate new eigenspace.
+        wtemp,vtemp = np.linalg.eigh(1.-infoDistance(resample(mtx)))
+        idx = np.argsort(wtemp)
+        vthresh = vtemp[:,idx[-tokeep:]]
+        Kt,Wt,ICt = fastica(vthresh, n_components=tokeep, max_iter=20000, tol=.0001)
+        
+        # Now match and add to average.
+        idmatch = matchic(ic,ICt)
+        
+        for g in range(tokeep):
+            # for vectors this should be element-wise multiplications
 
-    return icConf
+            toadd = ICt[:,idmatch[g,1]]*ic[:,g]
+            icConf[:,g] = icConf[:,g] + toadd*np.sign(np.sum(toadd))
+
+    return icConf/float(numiter)
 
 def matchic(ic1,ic2):
     """ 
@@ -268,8 +291,8 @@ def matchic(ic1,ic2):
     returned indmatch is a nIC by 2 matrix, where every row is a matched IC pair,
     and column one represents ic1, column 2 represents ic2
     """
-    covmtx = ic1.T*ic2
-    indmatch = np.matrix([[int(i), int(np.argmax(np.abs(covmtx[i,:])))] for i in range(covmtx.shape[0])])
+    covmtx = np.matrix(ic1).T*np.matrix(ic2)
+    indmatch = np.array([[int(i), int(np.argmax(np.abs(covmtx[i,:])))] for i in range(covmtx.shape[0])])
     return indmatch
 
 def topt(icm,cutoff=.05):
@@ -553,13 +576,16 @@ def autoprune(msaFN):
     mtx = newPrune(mtx, thresh)
     return mtx
 
-def infoDistance(mtx):
+def infoDistance(mtx,zerocase=1.):
     M,L = np.shape(mtx)
     H = Entropy(mtx)
     h = np.ones([L,L])*H
     mi = pinfwrapper.inf(mtx)
     jH = pinfwrapper.jointH(mtx)
-    return (h + h.T - 2*mi)/jH
+    jH = np.where(jH==0,np.nan,jH)
+    infdist = (h + h.T - 2*mi)/jH
+    infdist = np.where(np.isnan(infdist),zerocase,infdist)
+    return infdist
 
 def clean(mtx, vecs):
     cleaned = np.zeros(np.shape(mtx))
