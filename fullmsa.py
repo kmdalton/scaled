@@ -245,6 +245,50 @@ def resample(mtx):
     mtxrand = np.matrix([mtx[i,:] for i in np.random.randint(mtx.shape[0],size=mtx.shape[0])])
     return mtxrand
 
+def booty(ic,mtx):
+    """ 
+    Calculates confidence of IC, and residues in IC via bootstrapping.
+    
+    ic is a matrix whos columns are indepdentent components.
+    mtx is the pruned alignment matrix
+
+    booty returns a single matrix of same size as ic, with each column
+    containing values of confidences for each residue, which, when summed, 
+    represents the confidence of the IC (between zero and one).
+
+    The cluster can then be extracted from each column.
+    """
+
+    return icConf
+
+def matchic(ic1,ic2):
+    """ 
+    returns indices of ic2 which match best for each indice of ic1.
+    ic1 and ic2 are matrices of equal size, with columns as vectors.
+    """
+    
+
+def topt(icm,cutoff=.05):
+    """ Returns cluster by fitting t-test and returning residues above cutoff """
+    
+    param = t.fit(icm,loc=np.median(icm))
+    x = np.linspace(-.5,.5,200)
+    xf = t.pdf(x,param[0],loc=param[1],scale=param[2])
+    cdf = t.cdf(x,param[0],loc=param[1], scale=param[2])
+
+    minx = np.max(x[find(cdf<cutoff)])
+
+    # deal with direction of tail:
+    if icm[find(np.abs(samp)==np.max(np.abs(samp)))]<0:
+        cursect = find(samp<minx))>T
+    else:
+        maxx = np.min(x[find(cdf>(1-cutoff))])
+        cursect = (find(samp>maxx)).T
+        
+    return cursect
+
+
+
 # Gets the consensus sequence from alignment amtrix
 def consensus(mtx):
     m, f = getModesFreqs(mtx)
