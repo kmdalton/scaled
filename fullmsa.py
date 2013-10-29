@@ -262,29 +262,31 @@ def matchic(ic1,ic2):
     """ 
     returns indices of ic2 which match best for each indice of ic1.
     ic1 and ic2 are matrices of equal size, with columns as vectors.
-    """
     
+    returned indmatch is a nIC by 2 matrix, where every row is a matched IC pair,
+    and column one represents ic1, column 2 represents ic2
+    """
+    covmtx = ic1.T*ic2
+    indmatch = np.matrix([[int(i), int(np.argmax(np.abs(covmtx[i,:])))] for i in range(covmtx.shape[0])])
+    return indmatch
 
 def topt(icm,cutoff=.05):
     """ Returns cluster by fitting t-test and returning residues above cutoff """
     
     param = t.fit(icm,loc=np.median(icm))
     x = np.linspace(-.5,.5,200)
-    xf = t.pdf(x,param[0],loc=param[1],scale=param[2])
     cdf = t.cdf(x,param[0],loc=param[1], scale=param[2])
 
     minx = np.max(x[find(cdf<cutoff)])
 
     # deal with direction of tail:
     if icm[find(np.abs(samp)==np.max(np.abs(samp)))]<0:
-        cursect = find(samp<minx))>T
+        cursect = (find(samp<minx)).T
     else:
         maxx = np.min(x[find(cdf>(1-cutoff))])
         cursect = (find(samp>maxx)).T
         
     return cursect
-
-
 
 # Gets the consensus sequence from alignment amtrix
 def consensus(mtx):
