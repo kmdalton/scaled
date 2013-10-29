@@ -45,13 +45,13 @@ def inf(mtx):
     arrayConstructor = c_float*L*L
     rowConstructor = c_float*L
     C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
-    print 'Here we go! Starting information matrix calculation ...'
+    #print 'Here we go! Starting information matrix calculation ...'
     Cij(c_int(M), c_int(L), msa, C)
     B = np.zeros([L, L])
     for i in xrange(L):
         for j in xrange(L):
             B[i,j] = C[i][j]
-    print 'We are done in %s seconds' %(time() - start)
+    #print 'We are done in %s seconds' %(time() - start)
     return B
 
 # calculate joint entropy
@@ -73,12 +73,12 @@ def jointH(mtx):
     arrayConstructor = c_float*L*L
     rowConstructor = c_float*L
     C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
-    print 'Here we go! Starting information matrix calculation ...'
+    #print 'Here we go! Starting information matrix calculation ...'
     Cij(c_int(M), c_int(L), msa, C)
     B = np.zeros([L, L])
     for i in xrange(L):
         for j in xrange(L):
             B[i,j] = C[i][j]
-    print 'We are done in %s seconds' %(time() - start)
+    #print 'We are done in %s seconds' %(time() - start)
     return B
 
