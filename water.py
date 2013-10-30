@@ -181,7 +181,7 @@ def register(consensus, seq, resNums):
 # Two arguments, a protein seq as a string and an
 # output filename for a stockholm sequence alignment
 def phmmer(tarseq, **kw):
-    """Make an external call to phmmer. One argument, first argument is the string representing the amino acid sequence you would like to find homologs to. Returns a tuple containing two lists. The first list is the sequence headers, the second is a list of homologous sequences to the query."""
+    """Make an external call to phmmer. One argument, first argument is the string representing the amino acid sequence you would like to find homologs to. Returns a tuple containing two lists. The first list is the sequence headers, the second is a list of aligned homologous sequences to the query."""
 
     #TODO: test to see if this file exists!!!!
     databaseFN = kw.get('db', directoryPrefix + 'nr')
@@ -198,8 +198,9 @@ def phmmer(tarseq, **kw):
                 seqname = '>' + line[0] #Prepend the > so you're in fasta format
                 seq = line[-1]
                 seq = seq.upper() #SAFETY FIRST!
-                #Ditch insane characters and gaps
-                seq = re.sub(r'[^GASCVTPILDNEQMKHFYRW]', '', seq)
+                #Ditch insane characters
+                seq = re.sub(r'[\.]', '-', seq) #Pysca doesn't use spaces for gaps
+                seq = re.sub(r'[^-GASCVTPILDNEQMKHFYRW]', '', seq)
                 if seqname in seqs:
                     seqs[seqname] = seqs[seqname] + seq
                 else:
@@ -234,8 +235,9 @@ def clustalo(headers, sequences):
 
 def cullByLength(headers, seqs, length, **kw):
     """Prune a set of fasta headers, sequences to remove outside a percentage of the target length. Call as cullByLength(fasta headers (iterable), fasta sequences (iterable), target length (int), *kw). Set the threshold by supplying thresh=float. Thresh must be betwen 0 & 1 -- default is 0.1. Returns: (list of headers, list of sequences). returned sequences have length > length-thresh*length and < length+thresh*length"""
+    gapless= [re.sub(r'[-\.]','',i) for i in seqs] #Ignore gaps
     thresh = kw.get('thresh', 0.1)
     lmin   = length - thresh*length
     lmax   = length + thresh*length
-    culled = [seq for seq in zip(headers, seqs) if len(seq[1]) > lmin and len(seq[1]) < lmax]
+    culled = [seq[:2] for seq in zip(headers, seqs, gapless) if len(seq[2]) > lmin and len(seq[2]) < lmax]
     return zip(*culled)
