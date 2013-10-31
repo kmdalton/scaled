@@ -123,6 +123,9 @@ def getPartnerGI(protein1_gi,protein2):
     """ 
     returns fasta sequences for two proteins paired by their organism name. 
     such that sequence i in file 1 is from the same organism as sequence i in file 2
+    headers of fasta sequences are just the GI numbers of the protein
+
+    also returns organism list
     
     accepts a list of protein1 gi (as output from GI list downloads from Pubmed)
     and a query term which should be your second protein of interest (e.g. rodZ)
@@ -164,12 +167,13 @@ def getPartnerGI(protein1_gi,protein2):
     # Now make fasta files for each list of gis.
     p1file = id2fasta(accmatch[:,0])
     p2file = id2fasta(accmatch[:,1])
+    orgNames  = [p1_taxnames[i][1] for i in range(len(p1_taxnames))]
 
-    return p1file, p2file
+    return p1file, p2file, orgNames
 
     
-def combineFasta(p1file, p2file,combinedname='combined.fasta'):
-
+def combineFasta(p1file, p2file, headers, combinedname='combined.fasta'):
+    """ combines two fasta files, using headers as headers. """
     f = open(p1file, 'r')
     f2 = open(p2file, 'r')
     
@@ -187,7 +191,7 @@ def combineFasta(p1file, p2file,combinedname='combined.fasta'):
         
     out = open(combinedname, 'w')
     for i in range(len(s1)-1):
-        out.write('>'+protein2ids[i][2].replace(" ", "-"))
+        out.write('>'+headers[i].replace(" ", "-"))
         out.write('\n')
         for j in range(s1[i]+1,s1[i+1]):
             out.write(l1[j].rstrip('\n'))
