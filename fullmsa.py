@@ -368,28 +368,7 @@ def crossH(mtx):
     cH = np.sum(cH, axis = 2)
     return cH
 
-<<<<<<< HEAD
-def infoDistance(mtx):
-=======
-def jointH(mtx):
-    M,L = np.shape(mtx)
-    #L = 100
-    jH = np.zeros([L,L])
-    for i in range(L):
-        for j in range(L):
-            JPD = np.histogram2d(mtx[:,i], mtx[:,j], 21, [[0,21],[0,21]])[0]
-            jH[i,j] = np.sum(JPD[np.nonzero(JPD)]*np.log2(JPD[np.nonzero(JPD)]))
-    return jH
-
-def autoprune(msaFN):
-    mtx = binMatrix(msaFN)
-    aminoAcids = np.bincount(mtx.flatten())[:-1]/float(np.product(np.shape(mtx)))
-    thresh = aminoAcids.max()
-    mtx = newPrune(mtx, thresh)
-    return mtx
-
 def infoDistance(mtx,zerocase=1.):
->>>>>>> d87cc393079ee6b937ca317fa8cbf40d50d142e0
     M,L = np.shape(mtx)
     H = Entropy(mtx)
     h = np.ones([L,L])*H
