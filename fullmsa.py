@@ -405,11 +405,11 @@ def seqi(vec):
 
 
 def nEigs(mtx, **kw):
-    """Calculate the statistical threshold for the number of eigenvectors to keep based on Rama's method. Takes an alignment matrix & returns an estimate of the number of important eigenvectors by iteratively shuffling the alignment columns to generate a significance threshold. Specify the desired covariance metric to be used with the kwarg metric = func. The metric defaults to infodistance. Number of shufflings can be specified with the shuffles = int kwarg and defaults to 20."""
+    """Calculate the statistical threshold for the number of eigenvectors to keep based on Rama's method. Takes an alignment matrix & returns an estimate of the number of important eigenvectors by iteratively shuffling the alignment columns to generate a significance threshold. Specify the desired covariance metric to be used with the kwarg metric = func. The metric defaults to 1. - infoDistance. Number of shufflings can be specified with the shuffles = int kwarg and defaults to 20."""
     shuffles = kw.get('shuffles', 20)
-    metric   = kw.get('metric', infoDistance)
+    metric   = kw.get('metric', lambda x: 1. - infoDistance(x))
 
-    eigs = np.zeros(20)
+    eigs = np.zeros(shuffles)
     M,L = np.shape(mtx)
     m = deepcopy(mtx)
 
@@ -420,6 +420,7 @@ def nEigs(mtx, **kw):
             np.random.shuffle(m[:,j])
 
         eigs[i] = np.linalg.eigh(metric(m))[0][-2] #Store the second largest Eigenvalue
+        print "%s %% complete shuffling ..." %(100*(i+1)/float(shuffles))
 
     v,vec = np.linalg.eigh(metric(mtx))
     nvecs = np.shape(np.where(v > eigs.max()))[1]
