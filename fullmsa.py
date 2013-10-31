@@ -213,20 +213,6 @@ def getModesFreqs(mtx):
         m[i] = np.argmax(bins)
         f[i] = float(np.max(bins))/np.sum(bins)
     return m, f
-
-# returns a matrix of similarity for an alignment matrix where the sequences are rows
-def simseq(mtx):
-    nseq,npos = mtx.shape
-    msa = np.zeros((nseq,20*npos))
-
-    for p in np.arange(npos):
-        for a in np.arange(20):
-            msa[:,20*p+a] = np.where(mtx[:,p]==a,1,0)
-
-    msa = np.matrix(msa)
-    M = msa*msa.T/npos
-    return M
-
     
 #Return a 3D representation of the alignment matrix
 #To include amino acid as the z dimension
@@ -323,22 +309,6 @@ def prune(mtx, cut = 1.0):
     cols = columns(mtx, cut)
     return mtx[:,list(cols)]
 
-# prunes matrix of '-' consensus residues
-# I don't know what the difference is.
-def newPrune(mtx, cut = 0.98):
-    m, f = getModesFreqs(mtx)
-    gaps = np.where(m == 20)[0]
-    cols = np.where(f > cut)[0]
-    cols = set(range(np.shape(mtx)[1])) - (set(cols) & set(gaps))
-    cols = sorted(list(cols))
-    return mtx[:,list(cols)]
-
-# Prunes matrix based on entropy cutoff
-def HPrune(mtx, cut = 1.0):
-    H = Entropy(mtx)
-    cols = np.where(H > cut)[0]
-    return mtx[:,list(cols)]
-
 # returns columns which have a mode with frequence < cut (90% by default) 
 # and are not dominated by '-' modes.
 def columns(mtx, cut = 0.9):
@@ -346,83 +316,12 @@ def columns(mtx, cut = 0.9):
     cols = set(np.where(f < cut)[0]).intersection(set(np.where(m != 20)[0]))
     return list(cols)
 
-# chunks listo into chunks chunk.
-def chunkify(listo, chunks):
-    l = len(listo)
-    ind = np.arange(chunks+1)*l/chunks
-    ind[-1] = l
-    listo = [listo[ind[i]:ind[i+1]] for i in range(chunks)]
-    return listo
-
-# Creates a matrix weighted by 
-def weightrix(mtx):
-    M,L = np.shape(mtx)
-    D = np.ones([L,L])*DKL(mtx)
-    return pinfwrapper.inf(mtx)/(1 + np.abs(D - D.T))
-
-
-def randomEigs(mtx, func = weightrix, numVecs = 10):
-    m = deepcopy(mtx)
-    M,L = np.shape(mtx)
-    v = np.zeros([numVecs,L])
-    for i in range(numVecs):
-        for j in range(L):
-            np.random.shuffle(m[:,j])
-        v[i] = np.linalg.eig(func(m))[0]
-    return v
-
-#Takes square positional covariance matrix. returns square positional correlation matrix
-def Pearson(c):
-    l = np.shape(c)[0]
-    d = c[np.diag_indices(l)]
-    d = np.asmatrix(d)
-    d = np.asarray(d.T*d)
-    return c/d
-
-def Mij(mtx, l1, l2):
-    M, L = np.shape(mtx)
-    M1 = np.zeros([M, M, 20])
-    M1[range(M),:] = simp20[mtx[range(M),l1]]
-    M2 = np.zeros([M, M, 20])
-    M2[range(M),:] = simp20[mtx[range(M),l2]]
-    for i in range(20): M2[:,:,i] = M2[:,:,i].T
-    return M1 - M2
-
-def distM(mtx, l1, l2):
-    return np.sqrt(np.sum(np.square(np.sum(np.sum(Mij(mtx, l1, l2), 1), 1))))
-
-def mutInf(mtx):
-    M, L = np.shape(mtx)
-    mP = np.zeros([L, 21])
-    for i in xrange(L):
-        mP[i] = np.bincount(mtx[:,i], None, 21)
-    mI = np.zeros([L, L])
-    for i in xrange(L):
-        for j in xrange(L):
-            for y in np.where(mP[i] > 0)[0]:
-                for x in np.where(mP[j] > 0)[0]:
-                    jP = np.shape(np.where(mtx[np.where(mtx[:,i] == y), j] == x))[1]/float(M)
-                    if jP > 0:
-                        #print 'x=%s, y=%s, jP(x,y)=%s' %(x, y, jP)
-                        mI[i,j] += jP*np.log(jP/(mP[j,x]*mP[i,y]))
-    return mI
-
 def redundancy(mtx):
     M, L = np.shape(mtx)
     mI = pinfwrapper.inf(mtx)
     H = Entropy(mtx)
     h = (H*np.ones([L, L])).T + H*np.ones([L, L])
     return mI/h
-
-def prune2D(mtx, cut = 1.):
-    m,f = getModesFreqs(mtx)
-    cols = np.where(m != 20)[0]
-    print '%s columns' %len(cols)
-    mtx = mtx[:,cols]
-    m,f = getModesFreqs(np.rot90(mtx))
-    rows = np.where(m != 20)[0]
-    print '%s rows' %len(rows)
-    return mtx[rows]
 
 # Shannon entropy
 def Entropy(mtx):
@@ -433,32 +332,6 @@ def Entropy(mtx):
         for i in np.where(P > 0.)[0]:
             H[l] += -P[i]*np.log2(P[i])
     return H
-
-def clusterSelection(clusters, ats):
-    colors = ['lightblue', 'lightorange', 'violet']
-    for n in range(np.max(clusters)+1):
-        sel = '+'.join([str(i) for i in ats[np.where(clusters == n)[0]] if i != None])
-        if len(sel) > 0:
-            print 'create s%s, resi %s' %(n, sel)
-            print 'create s%s_l, s%s' %(n, n)
-            print 'color %s, s%s' % (colors[n%3], n)
-    print 'show surface, s* and not *_l'
-    print 'show sticks, *_l'
-
-def getClusters(labels):
-    n_clusters = np.max(labels)
-    clusters = []
-    for i in range(n_clusters):
-        clusters.append(np.where(labels == i)[0])
-    return clusters
-
-def alignRD(ats, R, atoms, chainID = 'A'):
-    atoms = [i for i in atoms if i['CHAIN'] == chainID and i['ATOMTYPE'] == 'CA' and i['RESNUM'] in ats]
-    resnums = [i['RESNUM'] for i in atoms]
-    D = pdbFile.distMat(atoms)
-    indices = [i[0] for i in enumerate(ats) if i[1] in resnums]
-    R = R[indices,:][:,indices]
-    return R, D
 
 # returns population frequency of amino acids each residue position in mtx
 def columnPops(mtx):
@@ -471,70 +344,6 @@ def columnPops(mtx):
 # estimates background frequency of amino acids
 def estimateBGFreq(mtx):
     return np.bincount(mtx.flatten(), None, 21)/float(len(mtx.flatten()))
-
-# given a matrix of sequences, will return Kullback-Lieber Divergence
-# between background population and residue frequencies
-def DKL(mtx):
-    M,L = np.shape(mtx)
-    bgq = estimateBGFreq(mtx)
-    cpops = columnPops(mtx)
-    dkl = np.zeros(L)
-    for i in range(L):
-        for j in range(21):
-            if bgq[j] > 0. and cpops[i,j] > 0.:
-                dkl[i] += np.log2(cpops[i,j]/bgq[j])*cpops[i,j]
-    return dkl
-
-# Same as DKL() but accepts second argument with custom background aa frequencies 
-def DKL2(mtx,bgq):
-    M,L = np.shape(mtx)
-#    bgq = estimateBGFreq(mtx)
-    cpops = columnPops(mtx)
-    dkl = np.zeros(L)
-    for i in range(L):
-        for j in range(21):
-            if bgq[j] > 0. and cpops[i,j] > 0.:
-                dkl[i] += np.log2(cpops[i,j]/bgq[j])*cpops[i,j]
-    return dkl
-
-# 
-def testMetric(mtx):
-    M,L = np.shape(mtx)
-    H = np.ones([L,L])*Entropy(mtx)
-    D = np.ones([L,L])*DKL(mtx)
-    mi = pinfwrapper.inf(mtx)
-    T = mi*D*D.T/(H+H.T)
-    return T
-
-# 
-def testMetric2(mtx):
-    M,L = np.shape(mtx)
-    H = np.ones([L,L])*Entropy(mtx)
-    D = np.ones([L,L])*DKL(mtx)
-    mi = pinfwrapper.inf(mtx)
-    T = mi*(D*D.T)/(1 + np.abs(H-H.T))
-    return T
-
-def weightrix(mtx):
-    M,L = np.shape(mtx)
-    H = np.ones([L,L])*Entropy(mtx)
-    D = np.ones([L,L])*DKL(mtx)
-    mi = pinfwrapper.inf(mtx)
-    return mi/(1+np.abs(D - D.T))
-
-def weights(mtx):
-    M,L = np.shape(mtx)
-    H = np.ones([L,L])*Entropy(mtx)
-    D = np.ones([L,L])*DKL(mtx)
-    T = (D*D.T)/(1 + np.abs(H-H.T))
-    return T
-
-def weights2(mtx):
-    M,L = np.shape(mtx)
-    H = np.ones([L,L])*Entropy(mtx)
-    D = np.ones([L,L])*DKL(mtx)
-    T = (D+D.T)/(1 + np.abs(H-H.T))
-    return T
 
 def sample(dist, ats, percent):
     d = deepcopy(dist)
@@ -559,6 +368,9 @@ def crossH(mtx):
     cH = np.sum(cH, axis = 2)
     return cH
 
+<<<<<<< HEAD
+def infoDistance(mtx):
+=======
 def jointH(mtx):
     M,L = np.shape(mtx)
     #L = 100
@@ -577,6 +389,7 @@ def autoprune(msaFN):
     return mtx
 
 def infoDistance(mtx,zerocase=1.):
+>>>>>>> d87cc393079ee6b937ca317fa8cbf40d50d142e0
     M,L = np.shape(mtx)
     H = Entropy(mtx)
     h = np.ones([L,L])*H
@@ -595,16 +408,6 @@ def clean(mtx, vecs):
         k = np.matrix(deepcopy(vec[:,i]))
         cleaned = cleaned + l*np.array(k.T*k)
     return cleaned
-
-def arrange(mtx, vec, labels):
-    secs = []
-    for i in range(max(labels)+1):
-        secs.append(np.where(labels == i)[0])
-    z = []
-    for i,sec in enumerate(secs, 1):
-        sec = sec[np.argsort(vec[sec,i])]
-        z.extend(sec)
-    return mtx[z][:,z]
 
 #Return a distance matrix and information matrix trimmed to overlap and return residue indices in meatspace
 def realDist(pdbFN, chainID, ats, mtx):
