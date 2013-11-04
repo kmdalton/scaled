@@ -266,6 +266,7 @@ def booty(ic,mtx,iternumfactor=4):
 
             toadd = ICt[:,idmatch[g,1]]*ic[:,g]
             icConf[:,g] = icConf[:,g] + toadd*np.sign(np.sum(toadd))
+        print "%s %% Complete resampling" %(100*(l+1)/float(numiter))
 
     return icConf/float(numiter)
 
@@ -407,6 +408,7 @@ def seqi(vec):
 def nEigs(mtx, **kw):
     """Calculate the statistical threshold for the number of eigenvectors to keep based on Rama's method. Takes an alignment matrix & returns an estimate of the number of important eigenvectors by iteratively shuffling the alignment columns to generate a significance threshold. Specify the desired covariance metric to be used with the kwarg metric = func. The metric defaults to 1. - infoDistance. Number of shufflings can be specified with the shuffles = int kwarg and defaults to 20."""
     shuffles = kw.get('shuffles', 20)
+    eigval   = kw.get('eigval', -2)
     metric   = kw.get('metric', lambda x: 1. - infoDistance(x))
 
     eigs = np.zeros(shuffles)
@@ -419,10 +421,39 @@ def nEigs(mtx, **kw):
         for j in range(L):
             np.random.shuffle(m[:,j])
 
-        eigs[i] = np.linalg.eigh(metric(m))[0][-2] #Store the second largest Eigenvalue
+        eigs[i] = np.linalg.eigh(metric(m))[0][eigval] #Store the second largest Eigenvalue
         print "%s %% complete shuffling ..." %(100*(i+1)/float(shuffles))
 
     v,vec = np.linalg.eigh(metric(mtx))
-    nvecs = np.shape(np.where(v > eigs.max()))[1]
+
+    nvecs = np.shape(np.where(v > eigs.max()))[1] -1
 
     return nvecs
+
+def bootstrapMetric(mtx,**kw):
+    """ 
+    Calculates confidence of metric via bootstrapping.
+    
+    mtx is the pruned alignment matrix
+
+    booty returns a square matrix of shape LxL where L is np.shape(mtx)[1].
+    
+    iternumfactor determined the number of bootstraps as
+    the times TIMES the number of columns in ic.
+    """
+
+    iternumfactor=kw.get('iternumfactor', 4)
+    metric = kw.get('metric', lambda x: 1.-infoDistance(x))
+
+
+    M,L = np.shape(mtx)
+    numiter = int(iternumfactor*mtx.shape[1])
+    booted  = np.zeros([L,L])
+
+    for l in range(numiter):
+        booted = booted + metric(resample(mtx))
+        print "%s %% complete ..." %(100.*(l+1)/float(numiter))
+
+    return booted/float(numiter)
+
+
