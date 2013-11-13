@@ -1,10 +1,5 @@
 import numpy as np
-import urllib
-import xml.etree.ElementTree as ET
-import os
 import json
-import httplib
-import random
 
 # Main method
 def makeMap(mtx,filename='output'):
