@@ -183,7 +183,10 @@ function tick(e) {
 
 
 //The JSMol stuff lives here
-$(document).ready(function() {
+
+var pdbID = "3ruw" ;
+
+function loadPDB() {
 
 Info = {
 	width: 500,
@@ -196,7 +199,7 @@ Info = {
 	//addSelectionOptions: true,
 	use: "HTML5",
 	readyFunction: null,
-	script: "load =3ruw;wireframe OFF;spacefill OFF;ribbons ON;"
+	script: "load =" + pdbID + ";wireframe OFF;spacefill OFF;ribbons ON;"
 }
 
 Jmol.setDocument(0) // required for after-page-loading to avoid document.write()
@@ -204,7 +207,7 @@ Jmol.getApplet("jmolApplet0",Info)
 
 // app would be the first parameter of a Jmol.script command 
 $("#jsmoldiv").html(Jmol.getAppletHtml(jmolApplet0))
-});
+}
 
 
 function spaceFill (resi) {
