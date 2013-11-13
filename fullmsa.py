@@ -442,7 +442,7 @@ def bootstrapMetric(mtx,**kw):
     the times TIMES the number of columns in ic.
     """
 
-    iternumfactor=kw.get('iternumfactor', 4)
+    iternumfactor=kw.get('iternumfactor', 0.25)
     metric = kw.get('metric', lambda x: 1.-infoDistance(x))
 
 
