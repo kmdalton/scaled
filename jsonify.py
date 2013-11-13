@@ -1,51 +1,65 @@
 import numpy as np
+import urllib
+import xml.etree.ElementTree as ET
+import os
+import json
+import httplib
+import random
 
-def jsonify(mtx, **kw):
-    L = np.shape(mtx)[0]
-    groups = kw.get('groups', [1]*L)
-    names  = kw.get('names', range(L))
-    thresh = kw.get('thresh', 2.)
-    json = '{\n\t"nodes":[\n\t\t'
+# Main method
+def makeMap(mtx,filename='output'):
 
-    thresh = np.mean(mtx) - thresh*np.std(mtx)
 
-    nodes = []
-    for n,g,i in zip(names,groups,range(L)):
-        #if np.shape(np.where(mtx[i] < thresh))[1] > 1:
-        nodes.append('{"name":%s,"group":%s}' %(n,g))
-    json = json + ',\n\t\t'.join(nodes)
+    mtx = np.matrix(mtx)
+
+    # Keep only upper diag to avoid double-connection weirdness
+    mtxu = np.triu(mtx) 
+
+    # Make dictionary
+    ids={}
+
+    # resids are refered to by their indice
+    curIDs = range(mtxu.shape[0])
+    for curid in curIDs:
+        otherIDs = np.array([i for i in curIDs if mtxu[curid,i]!=0 and i != curid])
+        ids[curid] = {'IDs':otherIDs}
+
+    output = mtx2json(ids, mtx)
     
-    json = json + '\n\t],\n\t"links":[\n\t\t'
+    # output json file
+    filename = filename+'.json'
+    s = open(filename, 'w')
+    s.write(json.dumps(output, indent=4, separators=(',', ': ')))
+    s.close()
+    
+    return filename
 
-    edges = []
-    for i,j in zip(*np.triu_indices(L)):
-        dist = mtx[i,j]
-        if i!=j:
-            if dist < thresh:
-                edges.append('{"source":%s,"target":%s,"value":%s}' %(i, j, dist))
-    json = json + ',\n\t\t'.join(edges)
+# Output JSON from buildmap output
+def mtx2json(ids, mtx):
+    output = {}
+    keycount = {}
 
-    json = json + '\n\t]\n}'
+    for key in ids.keys():
+        keycount[key] = 0
+    
+    # build links        
+    output['links'] = []
+    for key in ids.keys():
+        for target in ids[key]['IDs']:
+            keycount[key] += 1
 
-    return json
+    # build nodes
+    output['nodes'] = []
+    key2ind = []
+    for key in ids.keys():
+        output['nodes'].append({'name':str(key),'value': keycount[key]})
+        key2ind.append(key)
 
 
-def titrate(mtx, stds):
-    files = []
-    for i in stds:
-        t = np.mean(mtx) - i*np.std(mtx)
-        files.append(jsonify(mtx, thresh=t))
-    return files 
+    for key in ids.keys():
+        for target in ids[key]['IDs']:
+            output['links'].append({'source': key2ind.index(key),'target': key2ind.index(target),'value': (mtx[int(key),int(target)])})
 
-def sif(mtx, **kw):
-    L = np.shape(mtx)[0]
-    names  = kw.get('names', range(L))
-    thresh = kw.get('thresh', 2.)
-    edges  = []
-    maxdist = np.mean(mtx) - thresh*np.std(mtx)
-    for i,j in zip(*np.triu_indices(L)):
-        dist = mtx[i,j]
-        if i!=j:
-            if dist < maxdist:
-                edges.append('resi%s %ssigma resi%s' %(names[i], thresh, names[j]))
-    return '\n'.join(edges)
+        
+    return output
+
