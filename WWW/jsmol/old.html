@@ -22,23 +22,17 @@
 </head>
 
 <body>
-<table><tr><td></td>
+<table><td></td>
 <td>
+<span id=mydiv></span>
 <script type="text/javascript">
-
 
 function spaceFill (resi) {
     script = "select " + resi + "; spacefill ON;"
     jmolScript(script)
 }
 
-function unSpaceFill (resi) {
-    script = "select " + resi + "; spacefill OFF;"
-    jmolScript(script)
-}
-
 var script = "load =3ruw;spacefill off; backbone off; wireframe off; ribbons on";
-
 jmolApplet(["500","800"],script + ";set loadStructCallback \"jmolLoadStructCallback\";set defaultloadscript \"cartoon only;color structure;set bondmode OR;isDssp = false;\"")
 
 
@@ -49,7 +43,6 @@ var width = 1200,
 var color = d3.scale.category20();
 
 var force = d3.layout.force()
-    .friction(0.5)
     .charge(-120)
     .linkDistance(30)
     .size([width, height]);
@@ -57,6 +50,7 @@ var force = d3.layout.force()
 var svg = d3.select("td").append("svg")
     .attr("width", width)
     .attr("height", height)
+    .on("click", spaceFill(46));
 
 d3.json("cpn.json", function(error, graph) {
   force
@@ -75,23 +69,7 @@ d3.json("cpn.json", function(error, graph) {
     .enter().append("circle")
       .attr("class", "node")
       .attr("r", 6)
-      .attr("rendered", 0)
-      //.style("fill", function(d) { return color(d.group); })
-      .style("fill", "black")
-      .on("click", function(d) { 
-          //d3.select(this).style("fill", "violet")
-          //spaceFill(d.name)
-          if (d3.select(this).attr("rendered") == 0) {
-              spaceFill(d.name)
-              d3.select(this).style("fill", "violet")
-              d3.select(this).attr("rendered", 1);
-          }
-          else {
-              unSpaceFill(d.name)
-              d3.select(this).style("fill", "black")
-              d3.select(this).attr("rendered", 0);
-          }
-      ;})
+      .style("fill", function(d) { return color(d.group); })
       .call(force.drag);
 
   node.append("title")
@@ -108,17 +86,10 @@ d3.json("cpn.json", function(error, graph) {
   });
 });
 
+svg.selectall(".node")
+      .on("click", function(d) { d3.select(this).style("fill", "violet"); });
 
+
+spaceFill(47)
 </script>
-</td></tr>
-<tr>
-<td align="center">coupling matrix at 3-sigma</td>
-<td align="center">structure</td>
-</tr>
-</table>
-
-
-
-</body>
-
-
+</td></table>

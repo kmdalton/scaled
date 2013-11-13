@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Force-Directed Layout (Multiple Foci)</title>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+    <!--
+    <script type="text/javascript" src="js/Jmol2.js"></script>
+    <script type="text/javascript" src="JSmol.min.nojq.js"></script>
+    <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+    -->
+    <script type="text/javascript" src="JSmol.min.js"></script>
+    <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <style>
+
+.node {
+  cursor: pointer;
+  stroke: #3182bd;
+  stroke-width: 1.5px;
+}
+
+.link {
+  fill: none;
+  stroke: #9ecae1;
+  stroke-width: 1.5px;
+}
+
+#slider {
+  width: 50%;
+  margin: 0 auto;
+}
+
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <td> 
+          <div id="slider"></div>
+          <div id="forcegraph"></div>
+          Current Selection:<input type="text" disabled="disabled" id="resids" size="100"/>
+          <input type="button" value="Circle" onclick="tocircle();" >
+          <input type="button" value="Free" onclick="startforce();" >
+        </td>
+        <td>
+          <div id="jsmoldiv"></div>
+        </td>
+      </tr>
+    </table>
+    <script src="test.js"></script>
+    <a href="javascript:Jmol.script(jmolApplet0,'select 47; spacefill on;')">Hier Klicken!</a>
+  </body>
+</html>
