@@ -88,8 +88,8 @@ def binMatrix(seqs):
             # This is called when the size of the matrix is too small
             pass
             if (debug==1):
-                #print 'Failure parsing sequence with header: %s' %headers[i]
-                #print 'Sequence length: %s' %len(seqs[i])
+                print 'Failure parsing sequence with header: %s' %headers[i]
+                print 'Sequence length: %s' %len(seqs[i])
     return mtx
 
 # builds binary Rama matrix (20 aa, no gap)
