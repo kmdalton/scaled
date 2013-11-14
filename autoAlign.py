@@ -56,20 +56,18 @@ def run(tarSeq, **kw):
     return headers,seqs
 
 
-args = cgi.FieldStorage()
-
-tarSeq = int(args.getvalue('seq'))
+#args = cgi.FieldStorage()
+#
+#tarSeq = int(args.getvalue('seq'))
+tarSeq = argv[1]
 
 h,s = run(tarSeq)
 mtx = fullmsa.prune(fullmsa.binMatrix(s), 1.)
-d   = fullmsa.bootMetric(mtx, 0.1)
-print jsonify.jsonify(d)
-
-
-
-
+d   = fullmsa.bootstrapMetric(mtx, iternumfactor = 0.1)
+ats = water.register(tarSeq, fullmsa.consensus(mtx), range(1, len(tarSeq) + 1))
+resnames = [str(i) for i in ats[1:]]
 print "Content-type: text/html\n\n"
-print json
+print jsonify.jsonify(1. - d, names = resnames)
 
 
 

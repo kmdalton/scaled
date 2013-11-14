@@ -88,8 +88,8 @@ def binMatrix(seqs):
             # This is called when the size of the matrix is too small
             pass
             if (debug==1):
-                print 'Failure parsing sequence with header: %s' %headers[i]
-                print 'Sequence length: %s' %len(seqs[i])
+                #print 'Failure parsing sequence with header: %s' %headers[i]
+                #print 'Sequence length: %s' %len(seqs[i])
     return mtx
 
 # builds binary Rama matrix (20 aa, no gap)
@@ -266,7 +266,7 @@ def booty(ic,mtx,iternumfactor=4):
 
             toadd = ICt[:,idmatch[g,1]]*ic[:,g]
             icConf[:,g] = icConf[:,g] + toadd*np.sign(np.sum(toadd))
-        print "%s %% Complete resampling" %(100*(l+1)/float(numiter))
+        #print "%s %% Complete resampling" %(100*(l+1)/float(numiter))
 
     return icConf/float(numiter)
 
@@ -422,7 +422,7 @@ def nEigs(mtx, **kw):
             np.random.shuffle(m[:,j])
 
         eigs[i] = np.linalg.eigh(metric(m))[0][eigval] #Store the second largest Eigenvalue
-        print "%s %% complete shuffling ..." %(100*(i+1)/float(shuffles))
+        #print "%s %% complete shuffling ..." %(100*(i+1)/float(shuffles))
 
     v,vec = np.linalg.eigh(metric(mtx))
 
@@ -452,7 +452,7 @@ def bootstrapMetric(mtx,**kw):
 
     for l in range(numiter):
         booted = booted + metric(resample(mtx))
-        print "%s %% complete ..." %(100.*(l+1)/float(numiter))
+        #print "%s %% complete ..." %(100.*(l+1)/float(numiter))
 
     return booted/float(numiter)
 

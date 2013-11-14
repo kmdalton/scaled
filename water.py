@@ -149,20 +149,20 @@ def gappyRegister(consensus, seq, resNums):
 # returns relative sequence of aligned sequences
 def register(consensus, seq, resNums):
     aln = align(consensus, seq).split('\n')
-    for line in aln: print line
+    #for line in aln: print line
     aln = [i for i in aln if len(i) > 2 and i[0] != '#']
     l = len(aln)
     s1 = ''.join([aln[3*i] for i in range(l/3)])
     s1 = re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', s1)
     s2 = ''.join([aln[3*i+2] for i in range(l/3)])
     s2 = re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', s2)
-    print aln
+    #print aln
     x = int(aln[0].split()[0]) 
     y = int(aln[2].split()[0])
     ats = [None for i in range(len(consensus)+1)]
-    print consensus
-    print seq
-    print resNums
+    #print consensus
+    #print seq
+    #print resNums
     for i1,i2 in zip(s1, s2):
         if i1 != '-' and i2 != '-':
             try:
@@ -207,7 +207,7 @@ def phmmer(tarseq, **kw):
                     seqs[seqname] = seq
                     headers.append(seqname)
             except:
-                print "%s : %s"%(seqname, seq)
+                #print "%s : %s"%(seqname, seq)
     #Return two tuples, first the headers and then the corresponding sequences
     return headers, [seqs[i] for i in headers]
 
