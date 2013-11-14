@@ -207,6 +207,7 @@ def phmmer(tarseq, **kw):
                     seqs[seqname] = seq
                     headers.append(seqname)
             except:
+                pass
                 #print "%s : %s"%(seqname, seq)
     #Return two tuples, first the headers and then the corresponding sequences
     return headers, [seqs[i] for i in headers]
