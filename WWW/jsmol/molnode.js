@@ -23,6 +23,7 @@ var svg = d3.select("#forcegraph").append("svg")
 
 
 var oldnodes = "0"
+var dvals = new Array();
 
 function loadforcelayout(filename) {
     
@@ -160,14 +161,19 @@ function updateNow(threshold) {
     // restart force
     force
 	.nodes(nodes)
+	.charge(-20)
 	.links(links)
+	.linkStrength(1)
 	.start();
 
     link = svg.selectAll(".link").data(links);
     node = svg.selectAll(".node").data(nodes);
 
     link.enter().insert("line")
-	.attr("class", "link");
+	.attr("class", "link")
+	.attr("stroke-opacity",.5)
+	.attr("refX", 15)
+	.attr("refY", -1.5);
 
     link.exit().remove();    
     node.exit().remove();
@@ -180,12 +186,16 @@ function updateNow(threshold) {
         connected(parseInt(d.value)); 
     });
 
+
     node.attr("fill", function (d) { return nodeColor(d.value); })
+    
+
+    //redraw
 }
 
 
 function connected(dval) {
-    var dvals = new Array();
+    dvals = new Array();
     dvals = getChildren(dval,dvals);
 
     node.attr("fill", function(d) {
@@ -194,8 +204,12 @@ function connected(dval) {
     
     // fix thingy.
     var outputstring = "";
-
-    Jmol.script(jmolApplet0,"select " + oldnodes + "; spacefill OFF;");
+    try {
+	Jmol.script(jmolApplet0,"select " + oldnodes + "; spacefill  OFF;");
+    } catch(err) {
+	// do nothing, but don't break.
+    }
+    
 
 
     for (var k = 0; k < dvals.length; k++) {
@@ -205,9 +219,23 @@ function connected(dval) {
 	}
 
     }
-    Jmol.script(jmolApplet0,"select " + outputstring + "; spacefill ON;");
+
+    try {
+	Jmol.script(jmolApplet0,"select " + outputstring + "; spacefill	ON;");
+    } catch(err) {
+	// do nothing, but don't break
+    }
     oldnodes = outputstring;
     document.getElementById("resids").value = outputstring;
+
+
+    force.charge(function(d) {
+	return dvals.indexOf(parseInt(d.value))==-1 ? -20 : -60
+    }).linkStrength(function(d) {
+	return dvals.indexOf(parseInt(d.value))==-1 ? 1 : .6
+	
+    }).start();
+
     
 //    $("input#resids").val(dvals);
 }

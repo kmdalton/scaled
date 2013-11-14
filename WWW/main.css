@@ -1,3 +1,9 @@
+* {
+  box-sizing:border-box;
+  -moz-box-sizing:border-box;
+  -webkit-box-sizing:border-box
+}
+
 body {
     font-family: Helvetica, Arial, sans-serif;
     font-size:14px;
@@ -20,10 +26,11 @@ a:hover {
 a:active {
     color: #000000;
 }
+
 .box {
     margin-left: auto;
     margin-right: auto;
-    width: 70%;
+    width: 1240px;
     padding: 20px;
     font-size: 14px;
     background-color: #cccccc;
@@ -36,7 +43,7 @@ a:active {
 .boxbad {
     margin-left: auto;
     margin-right: auto;
-    width: 70%;
+    width: 100%;
     padding: 20px;
     font-size: 14px;
     background-color: #ffcccc;
@@ -45,10 +52,15 @@ a:active {
     border-color: #dd0000;
     text-align: center;
 }
+
+#citeus.boxbad {
+    background-color: #eeeeee;
+    border-color: #999999;
+}
 .maindiv {
     margin-left: auto;
     margin-right: auto;
-    width: 70%;
+    width: 100%;
     padding: 20px;
     font-size: 14px;
     background-color: #ffffff;
@@ -60,6 +72,8 @@ a:active {
 }
 
 .subdiv {    
+    margin-left: auto;
+    margin-right: auto;
     width: 90%;
     padding: 10px;
     font-size: 14px;
@@ -68,4 +82,30 @@ a:active {
     border-width: 2px;
     border-color: #dddddd;
     text-align: left;
+}
+
+.node {
+    cursor: pointer;
+    stroke: #3182bd;
+    stroke-width: 1.5px;
+}
+
+.link {
+    fill: none;
+    stroke: #9ecae1;
+    stroke-width: 1.5px;
+}
+
+#loadseq textarea { 
+    resize:none;
+    width: 78%;
+    height:150px;
+    margin: 0px
+}
+#loadseqbutton { 
+    width: 20%;
+    height:150px;
+    margin: 0px;
+    float:right;
+    position: relative;
 }
