@@ -189,7 +189,7 @@ def sca5(mtx, **kwargs):
     Cp = np.abs((pwX.T*pwX)/nseq-np.mean(pwX,axis=0).T*np.mean(pwX,axis=0))
     Cs = np.abs((pwX*pwX.T)/npos-np.mean(pwX.T,axis=0).T*np.mean(pwX.T,axis=0))
 
-    return Cp,Cs,pwX
+    return np.array(Cp),np.array(Cs),np.array(pwX) #matrices are silly
 
     
 # return frequency for all aa in  all positions
