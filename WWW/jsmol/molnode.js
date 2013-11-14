@@ -75,6 +75,27 @@ function loadforcelayout2() {
     
     updateNow(0.5);
 }
+function loadforcelayout3(filename) {
+    var fastaseq = document.getElementById("loadseq2").value;
+    alert(fastaseq);
+    d3.json("http://maripaludis.stanford.edu/cgi-bin/autoAlign.py?seq="+fastaseq, function(error, json) {
+	
+	root = json;
+	for (var i = 0; i < root.nodes.length; i++) {
+	    root.nodes[i].value = i;
+	}
+	
+	nodes = root.nodes;
+	links = root.links;
+	
+	force.nodes(nodes).links(links).start();
+	
+	
+	updateNow(0.5);
+	
+    });
+}
+
 
 $(function() { 
     $("#slider").slider({
