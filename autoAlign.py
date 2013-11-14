@@ -69,7 +69,7 @@ d   = fullmsa.bootstrapMetric(mtx, iternumfactor = 0.1)
 ats = water.register(fullmsa.consensus(mtx), tarSeq, range(1, len(tarSeq) + 1))
 resnames = [str(i) for i in ats[1:]]
 print "Content-type: text/html\n\n"
-print jsonify.jsonify(1. - d, names = resnames)
+print jsonify.jsonify(d, names = resnames)
 
 
 
