@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import water, fasta, fullmsa, jsonify, cgi
 from sys import argv
 import numpy as np
@@ -56,10 +58,10 @@ def run(tarSeq, **kw):
     return headers,seqs
 
 
-#args = cgi.FieldStorage()
-#
-#tarSeq = int(args.getvalue('seq'))
-tarSeq = argv[1]
+args = cgi.FieldStorage()
+
+tarSeq = args.getvalue('seq')
+#tarSeq = argv[1]
 
 h,s = run(tarSeq)
 mtx = fullmsa.prune(fullmsa.binMatrix(s), 1.)
