@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import water, fasta, fullmsa, jsonify, cgi
 from sys import argv
 import numpy as np
@@ -56,10 +58,10 @@ def run(tarSeq, **kw):
     return headers,seqs
 
 
-#args = cgi.FieldStorage()
-#
-#tarSeq = int(args.getvalue('seq'))
-tarSeq = argv[1]
+args = cgi.FieldStorage()
+
+tarSeq = args.getvalue('seq')
+#tarSeq = argv[1]
 
 h,s = run(tarSeq)
 mtx = fullmsa.prune(fullmsa.binMatrix(s), 1.)
@@ -67,7 +69,7 @@ d   = fullmsa.bootstrapMetric(mtx, iternumfactor = 0.1)
 ats = water.register(fullmsa.consensus(mtx), tarSeq, range(1, len(tarSeq) + 1))
 resnames = [str(i) for i in ats[1:]]
 print "Content-type: text/html\n\n"
-print jsonify.jsonify(1. - d, names = resnames)
+print jsonify.jsonify(d, names = resnames)
 
 
 
