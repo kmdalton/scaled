@@ -4,6 +4,9 @@ import water, fasta, fullmsa, jsonify, cgi
 from sys import argv
 import numpy as np
 
+print "Content-type: text/html\n\n"
+
+
 def run(tarSeq, **kw):
     """Supply a target sequence, search nr for homologs. Return headers and aligned sequences. It will choose the longest alignment which is at least as long as the target sequence times a threshold float between 0 and 1 by doing an iterative search. Change the numbers of cycles in the search with the 'cycles' kwarg which defaults to 10. Cycles are cheap but don't matter much after 5 or 6. The threshold can be supplied by the 'thresh' kwarg. Thresh defaults to 0.95. Set the max number of sequences with the maxseq kwarg (int); default is 5000. Set the minimum number of sequences to return with the 'minseq' kwarg (int) defaults to 400."""
     thresh = kw.get('thresh', 0.95)
@@ -68,17 +71,6 @@ mtx = fullmsa.prune(fullmsa.binMatrix(s), 1.)
 d   = fullmsa.bootstrapMetric(mtx, iternumfactor = 0.1)
 ats = water.register(fullmsa.consensus(mtx), tarSeq, range(1, len(tarSeq) + 1))
 resnames = [str(i) for i in ats[1:]]
-print "Content-type: text/html\n\n"
 print jsonify.jsonify(d, names = resnames)
 
 
-
-if __name__=="__main__":
-    fastaIn = argv[1]
-    outFN   = argv[2]
-    tarSeq  = fasta.importFasta(fastaIn)[1][0]
-    h,s = run(tarSeq)
-    out = open(outFN, 'w')
-    for header, seq in zip(h,s):
-        out.write("%s\n%s\n" %(header.strip(), seq.strip()))
-    out.close()
