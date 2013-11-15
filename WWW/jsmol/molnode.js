@@ -47,39 +47,33 @@ function loadforcelayout(filename) {
 
 function loadforcelayout2() {
 
-    var fastaseq = document.getElementById("loadseq").value;
+    var fastaseq = document.getElementById("loadseq2").value;
     
     alert("This is going to take a while. Click OK and wait.");
+    alert(fastaseq);
+    d3.json("http://maripaludis.stanford.edu/cgi-bin/autoAlign.py?seq="+fastaseq, function(error, json) {
+	alert(json);	
+	root = json;
+	for (var i = 0; i < root.nodes.length; i++) {
+	    root.nodes[i].value = i;
+	}
+	
+	nodes = root.nodes;
+	links = root.links;
+	
+	force.nodes(nodes).links(links).start();
+	
+	
+	updateNow(0.5);
+	
+    });
 
-    $.post("http://maripaludis.stanford.edu:8000/cgi-bin/autoAlign.py", { seq: fastaseq })
-	.done(function( data ) {
-	    root = jQuery.parseJSON( data );
-	    alert("Done! Now load your PDB!");
-	})
-	.fail(function() { 
-	    alert( "JSON call failed...");
-	})
-	.always(function() {
-	    alert( "finished" );
-	});
-    
-    root = json;
-    for (var i = 0; i < root.nodes.length; i++) {
-	root.nodes[i].value = i;
-    }
-    
-    nodes = root.nodes;
-    links = root.links;
-    
-    force.nodes(nodes).links(links).start();
-    
-    updateNow(0.5);
 }
 function loadforcelayout3(filename) {
     var fastaseq = document.getElementById("loadseq2").value;
     alert(fastaseq);
-    d3.json("http://maripaludis.stanford.edu/cgi-bin/autoAlign.py?seq="+fastaseq, function(error, json) {
-	
+    d3.json("http://stanford.edu/~acolavin/cgi-bin/posttry.py", function(error, json) {
+	alert(json.p);	
 	root = json;
 	for (var i = 0; i < root.nodes.length; i++) {
 	    root.nodes[i].value = i;
@@ -253,7 +247,7 @@ function connected(dval) {
     force.charge(function(d) {
 	return dvals.indexOf(parseInt(d.value))==-1 ? -20 : -60
     }).linkStrength(function(d) {
-	return dvals.indexOf(parseInt(d.value))==-1 ? 1 : .6
+	return dvals.indexOf(parseInt(d.value))==-1 ? 1 : .01
 	
     }).start();
 
