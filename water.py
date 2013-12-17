@@ -158,8 +158,10 @@ def register(consensus, seq, resNums):
     s2 = re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', s2)
     print aln
     x = int(aln[0].split()[0]) 
+    x = x-1 #Consensus seq and ats are zero indexed
     y = int(aln[2].split()[0])
-    ats = [None for i in range(len(consensus)+1)]
+    y = y-1 #resNums is zero indexed
+    ats = [None for i in range(len(consensus))]
     print consensus
     print seq
     print resNums
