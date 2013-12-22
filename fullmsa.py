@@ -432,14 +432,21 @@ def nEigs(mtx, **kw):
 
 def bootstrapMetric(mtx,**kw):
     """ 
-    Calculates confidence of metric via bootstrapping.
+    Calculates average of metric via bootstrapping.
     
     mtx is the pruned alignment matrix
 
-    booty returns a square matrix of shape LxL where L is np.shape(mtx)[1].
+    returns a tuple (d, v) wherein
+    d is a square matrix of shape LxL where L is np.shape(mtx)[1]
+      containing the average of all resampled metric values
+    v is and LxL matrix where vij is the variance of all the 
+      resampled values which were averaged to give the corresponding dij
     
     iternumfactor determined the number of bootstraps as
-    the times TIMES the number of columns in ic.
+    iternumfactor*np.shape(mtx)[0]. In practice, Alex says
+    this converges very quickly and usually a very small number
+    suffices (~0.01). However, for short (eg less than 800 seqs) 
+    alignments, Kevin likes to use >0.1
     """
 
     iternumfactor=kw.get('iternumfactor', 4)
@@ -448,12 +455,15 @@ def bootstrapMetric(mtx,**kw):
 
     M,L = np.shape(mtx)
     numiter = int(iternumfactor*mtx.shape[1])
-    booted  = np.zeros([L,L])
+    booted  = np.zeros([numiter,L,L])
 
     for l in range(numiter):
-        booted = booted + metric(resample(mtx))
-        print "%s %% complete ..." %(100.*(l+1)/float(numiter))
+        booted[l] = metric(resample(mtx))
+        #booted = booted + metric(resample(mtx))
+        #print "%s %% complete ..." %(100.*(l+1)/float(numiter))
+    bootstrapped = np.average(booted, axis=0)
+    variances    = np.var(booted, axis=0)
 
-    return booted/float(numiter)
+    return bootstrapped, variances
 
 
