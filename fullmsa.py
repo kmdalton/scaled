@@ -304,9 +304,9 @@ def alignICs(unalignedIC, targetIC):
     covmtx = np.matrix(unalignedIC).T*np.matrix(targetIC)
     covmtx = np.array(covmtx)
     ind    = np.abs(covmtx).argmax(axis=1)
-    signs  = np.sign(cov[arange(shape(covmtx)[0]),ind])
-    aligned= unalignedIC[:,ind]
-    aligned= np.ones(shape(aligned))*signs*aligned
+    signs  = np.sign(covmtx[np.arange(np.shape(covmtx)[0]),ind])
+    signed = np.ones(np.shape(unalignedIC))*signs*unalignedIC
+    aligned= signed[:,ind]
     return aligned
 
 
