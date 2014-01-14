@@ -282,6 +282,34 @@ def matchic(ic1,ic2):
     indmatch = np.array([[int(i), int(np.argmax(np.abs(covmtx[i,:])))] for i in range(covmtx.shape[0])])
     return indmatch
 
+def alignICs(unalignedIC, targetIC):
+    """
+    this function is similar in spirit to matchich inasmuch as it wishes to handle
+    the ambiguities of the ica algorithm. 
+
+    in particular, this function accepts two pairs of independent components as nparrays
+    indexed like component1 = array[:,0], component2 = array[:,1] and so forth. the function
+    will shuffle the order of ics on the first axis of the first input array such that they
+    match up with the order of ics in the second array. furthermore, the function will correct
+    the sign of these ics if they do not match. 
+
+    alignICs(unalignedIC, targetIC):
+        --unalignedIC: an array of column indexed ICs to be aligned with the ...
+        --targetIC:    an array of ICs the same size as unalignedIC
+
+    returns:
+        --array with the same shape as the input array containing the unaligned ICs permuted to
+          match the targetICs
+    """
+    covmtx = np.matrix(unalignedIC).T*np.matrix(targetIC)
+    covmtx = np.array(covmtx)
+    ind    = np.abs(covmtx).argmax(axis=1)
+    signs  = np.sign(cov[arange(shape(covmtx)[0]),ind])
+    aligned= unalignedIC[:,ind]
+    aligned= np.ones(shape(aligned))*signs*aligned
+    return aligned
+
+
 def topt(icm,cutoff=.05):
     """ Returns cluster by fitting t-test and returning residues above cutoff """
     
@@ -455,5 +483,31 @@ def bootstrapMetric(mtx,**kw):
         print "%s %% complete ..." %(100.*(l+1)/float(numiter))
 
     return booted/float(numiter)
+
+
+def seqWeights(mtx, **kw):
+    """
+    Calculates the weights for each sequence according to DCA
+
+    mtx is the only argument and is a pruned alignment matrix
+
+    returns a numpy array containing the weights for each sequence in the MSA in order
+
+    kwargs:
+        thresh -> the indentify threshold for the alignment matrix is a float between 0 and 1. default is 0.7
+    """
+    M,L = np.shape(mtx)
+
+    thresh = kw.get('thresh', 0.7)
+    weights = np.zeros(M)
+
+    for i in range(M):
+        S = np.ones(np.shape(mtx))*mtx[i]
+        km= np.zeros(np.shape(mtx))
+        km[np.where(S - mtx == 0.)] = 1.
+        km = np.sum(km, axis=1)
+        km = km - thresh * L
+        weights[i] = np.shape(np.where(km > 0.))[1]
+    return weights
 
 
