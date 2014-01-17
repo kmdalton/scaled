@@ -8,6 +8,7 @@ import subprocess
 
 #This tells the script where to find the sequences database
 directoryPrefix = os.path.dirname(os.path.abspath(__file__)) + '/'
+BLASTDIR = "/home/kmdalton/DATUMS/blast"
 
 Greek = {
     '1':'A',
@@ -187,7 +188,7 @@ def phmmer(tarseq, **kw):
     #TODO: test to see if this file exists!!!!
     databaseFN = kw.get('db', directoryPrefix + 'nr')
 
-    p = subprocess.Popen(["phmmer", "-E", "1e-5", "-A", "/dev/stdout", "-o", "/dev/null", "-", databaseFN], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.Popen(["phmmer", "--notextw",  "--tformat", "fasta", "--qformat", "fasta","-E", "1e-5", "-A", "/dev/stdout", "-o", "/dev/null", "-", databaseFN], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
     lines = p.communicate(input=">tarSeq\n%s\n" %tarseq)[0]
     lines = lines.split("\n")
     seqs = {}
@@ -242,3 +243,27 @@ def cullByLength(headers, seqs, length, **kw):
     lmax   = length + thresh*length
     culled = [seq[:2] for seq in zip(headers, seqs, gapless) if len(seq[2]) > lmin and len(seq[2]) < lmax]
     return zip(*culled)
+
+def doubleAlign(seq1, seq2, maxhits = 5000):
+    h1,s1 = zip(*zip(*phmmer(seq1))[:maxhits])
+    h2,s2 = zip(*zip(*phmmer(seq2))[:maxhits])
+    t1    = [lookupTaxonomy(i.split('|')[1]) for i in h1]
+    t2    = [lookupTaxonomy(i.split('|')[2]) for i in h2]
+    pairedSeqs    = []
+    pairedHeaders = []
+    Taxa    = []
+    for h,s,t in zip(h1,s1,t1):
+        for taxon in t:
+            for H,S,T in zip(h2,s2,t2):
+                for TAXON in T:
+                    if taxon == TAXON:
+                        pairedSeqs.append((s,S))
+                        pairedHeaders.append((h,H))
+                        Taxa.append((taxon,TAXON))
+    return pairedHeaders, pairedSeqs, Taxa
+
+def lookupTaxonomy(gi):
+    p = subprocess.Popen(["blastdbcmd","-db","nr","-outfmt",'"%T"',"-entry",gi], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    line = p.communicate()[0]
+    line = re.sub('"', '', line)
+    return line.split('\n')
