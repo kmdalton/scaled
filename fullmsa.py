@@ -309,6 +309,21 @@ def alignICs(unalignedIC, targetIC):
     aligned= signed[:,ind]
     return aligned
 
+def naiveTopt(icm,cutoff=.05): #like topt but doesn't correct for tail direction
+    """ Returns cluster by fitting t-test and returning residues above cutoff """
+    
+    param = t.fit(icm,loc=np.median(icm))
+    x = np.linspace(-1,1,200)
+    cdf = t.cdf(x,param[0],loc=param[1], scale=param[2])
+
+    minx = np.max(x[np.nonzero(cdf<cutoff)])
+
+    # deal with direction of tail:
+    cursect = np.array([i for i in range(icm.size) if icm[i]<minx])
+        
+    return cursect
+
+
 
 def topt(icm,cutoff=.05):
     """ Returns cluster by fitting t-test and returning residues above cutoff """
@@ -520,4 +535,14 @@ def seqWeights(mtx, **kw):
         weights[i] = np.shape(np.where(km > 0.))[1]
     return weights
 
+
+def shuffleProtein(mtx, boundary, prot = 1):
+    shuffled = deepcopy(mtx)
+    if prot==1:
+        np.random.shuffle(shuffled[:,:boundary])
+    elif prot==2:
+        np.random.shuffle(shuffled[:,boundary:])
+    else:
+        print "you suck."
+    return shuffled
 

@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from copy import deepcopy
 import re
 import os
 import pickle
@@ -244,6 +245,26 @@ def cullByLength(headers, seqs, length, **kw):
     culled = [seq[:2] for seq in zip(headers, seqs, gapless) if len(seq[2]) > lmin and len(seq[2]) < lmax]
     return zip(*culled)
 
+def extractGI(header):
+    return header.split('|')[1]
+
+def commonTaxa(gi1, seq1, gi2, seq2):
+    t1    = [lookupTaxonomy(i) for i in gi1]
+    t2    = [lookupTaxonomy(i) for i in gi2]
+    pairedSeqs    = []
+    pairedHeaders = []
+    Taxa    = []
+    for h,s,t in zip(gi1,seq1,t1):
+        for taxon in t:
+            for H,S,T in zip(gi2,seq2,t2):
+                for TAXON in T:
+                    if taxon == TAXON:
+                        if taxon not in Taxa and (h,H) not in pairedHeaders: #NO DUPLICATES
+                            pairedSeqs.append((s,S))
+                            pairedHeaders.append((h,H))
+                            Taxa.append(taxon)
+    return pairedHeaders, pairedSeqs, Taxa
+
 def doubleAlign(seq1, seq2, maxhits = 5000):
     h1,s1 = zip(*zip(*phmmer(seq1))[:maxhits])
     h2,s2 = zip(*zip(*phmmer(seq2))[:maxhits])
@@ -267,3 +288,14 @@ def lookupTaxonomy(gi):
     line = p.communicate()[0]
     line = re.sub('"', '', line)
     return line.split('\n')
+
+def doubleRegister(consensus, seq1, seq2):
+    l1,l2 = len(seq1),len(seq2)
+    resnums = np.concatenate((np.arange(1, l1+1), np.arange(1, l2+1)))
+    ats = register(consensus, seq1+seq2, resnums)
+    #ats can have Nones in them -- we need to protect ourselves from this:
+    tmpats = deepcopy(ats)
+    tmpats[np.where(ats) == None] = ats.max()
+    boundary = np.argmin(tmpats[1:] -  tmpats[:-1]) + 1
+    del tmpats
+    return ats, boundary
