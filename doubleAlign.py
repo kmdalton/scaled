@@ -4,6 +4,7 @@
 # BLAST+, hmmer, clustalo, nr database                                        #
 ###############################################################################
 import water, fasta, fullmsa
+from sys import argv
 
 
 def run(seq1, seq2, maxseqs = 5000):
@@ -26,7 +27,7 @@ def run(seq1, seq2, maxseqs = 5000):
     gi1 = [h.split('|')[1] for h in h1] 
     gi2 = [h.split('|')[1] for h in h2] 
 
-    h,s,t = water.commonTaxa(g1,s1,g2,s2)
+    h,s,t = water.commonTaxa(gi1,s1,gi2,s2)
     
     #Don't trust hmmer alignment -- remake with clustalo
     #Concatenate the seq pairs and remove gaps
@@ -44,9 +45,10 @@ def run(seq1, seq2, maxseqs = 5000):
     return nheaders, alnseqs
 
 if __name__ == "__main__":
-    seq1 = argv[1]
-    seq2 = argv[2]
-    outFN= argv[3]
+    inFN = argv[1]
+    outFN= argv[2]
+    h,s = fasta.importFasta(inFN)
+    seq1,seq2 = s[0],s[1]
     h,s = run(seq1, seq2)
 
     with open(outFN, 'w') as out:
