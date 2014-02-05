@@ -7,6 +7,7 @@ from time import time
 from multiprocessing import cpu_count
 import pinfwrapper
 from sklearn.decomposition import fastica
+from sklearn.cluster import MeanShift
 from scipy.stats import t
 
 #Includes the gap character!
@@ -489,16 +490,18 @@ def bootstrapMetric(mtx,**kw):
     iternumfactor*np.shape(mtx)[0]. In practice, Alex says
     this converges very quickly and usually a very small number
     suffices (~0.01). However, for short (eg less than 800 seqs) 
-    alignments, Kevin likes to use >0.1
+    alignments, Kevin likes to use >0.1. We'll let it default to 0.1
     """
 
-    iternumfactor=kw.get('iternumfactor', 4)
+    iternumfactor=kw.get('iternumfactor', 0.1)
     metric = kw.get('metric', lambda x: 1.-infoDistance(x))
 
 
     M,L = np.shape(mtx)
     numiter = int(iternumfactor*mtx.shape[1])
-    booted  = np.zeros([numiter,L,L])
+    booted  = metric(mtx)
+    X,Y     = np.shape(booted)
+    booted  = np.zeros([numiter,X,Y])
 
     for l in range(numiter):
         booted[l] = metric(resample(mtx))
@@ -546,3 +549,29 @@ def shuffleProtein(mtx, boundary, prot = 1):
         print "you suck."
     return shuffled
 
+def meanShift(mtx, **kw):
+    """
+    meanShift(mtx, **kw) uses scikit-learn's meanshift clustering implementation to
+    cluster infoDistance matrices.
+
+    Call with the distance matrix as the first parameter. 
+        Available Keyword arguments:
+        startingbandwidth:  the lowest bandwidth to begin the estimation with (defaults to 0.1)
+        bandwithincrement:  the amount by which to increment bandwidth in between rounds of
+                            meanshift (defaults to 0.01)
+    """
+    H = kw.get('startingbandwidth', 0.1)
+    dH= kw.get('bandwidthincrement', 0.01)
+    ms = MeanShift(bandwidth = H)
+    clustercenters = None
+    nnonunary = []
+    while nclusters > 1:
+        ms = MeanShift(bandwidth = H)
+        ms.fit(mtx)
+        centers   = ms.cluster_centers_
+        clusters  = ms.labels_
+        nclusters = np.shape(np.where(np.bincount(clusters) > 0))[1]
+        nunary    = np.shape(np.where(np.bincount(clusters) ==1))[1]
+        nnonunary.append(nclusters - nunary)
+        H = H + dH
+    dn = np.array(nnonunary[1:]) - np.array(nnonunary[:-1])
