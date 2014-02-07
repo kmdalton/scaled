@@ -20,7 +20,7 @@ def adaptiveMeanshift(x, mtx, k):
     """
     y  = x
     nn = knn(y, mtx, k) 
-    h  = np.array([np.sqrt(np.dot(i,i)) for i in (nn - y)])
+    h  = np.array([np.sum(np.abs(i)) for i in (nn - y)])
     yn = np.sum(
             nn.T*np.exp(
                 -np.square(y - nn).T/np.square(h)
