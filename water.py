@@ -289,13 +289,20 @@ def lookupTaxonomy(gi):
     line = re.sub('"', '', line)
     return line.split('\n')
 
+def blastdbcmd(gi, outfmt):
+    p = subprocess.Popen(["blastdbcmd","-db","nr","-outfmt",outfmt,"-entry",gi], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    line = p.communicate()[0]
+    line = re.sub('"', '', line)
+    return line
+
 def doubleRegister(consensus, seq1, seq2):
     l1,l2 = len(seq1),len(seq2)
     resnums = np.concatenate((np.arange(1, l1+1), np.arange(1, l2+1)))
     ats = register(consensus, seq1+seq2, resnums)
+    print ats
     #ats can have Nones in them -- we need to protect ourselves from this:
     tmpats = deepcopy(ats)
+    print tmpats
     tmpats[np.where(ats) == None] = ats.max()
     boundary = np.argmin(tmpats[1:] -  tmpats[:-1]) + 1
-    del tmpats
     return ats, boundary
