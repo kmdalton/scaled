@@ -303,16 +303,16 @@ def blastp(seq, **kw):
     Keyword arguments:
     db -- String. The name of the blast database to use. Defaults to 'nr'. 
     procs -- The number of threads to utilize.  Defaults to the number reported from multiprocessing.cpu_count()
-    outfmt -- String. A format string for the results using the blastp formatting options. Defaults to '6 sgi staxids evalue sseq'. 
+    outfmt -- String. A format string for the results using the blastp formatting options. As with the blast interface, this is a space-delimited set of format features. For a comprehensive list of available options please see the blast documentations. Defaults to '6 sgi staxids evalue sseq' which produces a tab deliminited list containing the subject GI, subject taxid(s), subject evalue and finally the matching portion of the subject sequences.
     max_seqs -- Int or String. The maximum number of sequences to return from the blast query. Defaults to 1000.
     """
     db       = kw.get('db', 'nr')
-    outfmt   = kw.get('outfmt', '6\ sgi\ staxids\ evalue\ sseq')
+    outfmt   = kw.get('outfmt', '6 sgi staxids evalue sseq')
+    outfmt   = "'%s'" %outfmt
     procs    = kw.get('procs', cpu_count())
     max_seqs = kw.get('max_seqs', 1000)
-    outfmt   = '"%s"' %outfmt
-
-    p = subprocess.Popen(["blastp","-db","nr","-outfmt",outfmt,"-max_target_seqs",str(max_seqs),"-query","-","-num_threads","%s" %procs], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    arguments = ["blastp","-db","nr","-max_target_seqs",str(max_seqs),"-query","-","-num_threads","%s" %procs,"-outfmt",outfmt]
+    p = subprocess.Popen(' '.join(arguments), stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     lines = p.communicate(input=">tarSeq\n%s\n" %seq)[0]
     lines = lines.split("\n")
     return lines
