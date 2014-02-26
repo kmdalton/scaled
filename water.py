@@ -307,7 +307,7 @@ def blastp(seq, **kw):
     max_seqs -- Int or String. The maximum number of sequences to return from the blast query. Defaults to 1000.
     """
     db       = kw.get('db', 'nr')
-    outfmt   = kw.get('outfmt', '6 sgi staxids evalue sseq')
+    outfmt   = kw.get('outfmt', '6 evalue sgi staxids sseq')
     outfmt   = "'%s'" %outfmt
     procs    = kw.get('procs', cpu_count())
     max_seqs = kw.get('max_seqs', 1000)
