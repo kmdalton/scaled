@@ -315,7 +315,7 @@ def blastp(seq, **kw):
     p = subprocess.Popen(' '.join(arguments), stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     lines = p.communicate(input=">tarSeq\n%s\n" %seq)[0]
     lines = lines.split("\n")
-    return lines
+    return lines[:-1] #The last line is empty
 
 def doubleRegister(consensus, seq1, seq2):
     l1,l2 = len(seq1),len(seq2)

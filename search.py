@@ -11,7 +11,7 @@ import os
 import re
 
 #Location of the proteome.fa file and the base directory for all the analysis
-headDir = '__ur__directory__goes__here__'
+headDir = '__ur_directory_goes_here__'
 #Set this to 'phmmer' to use phmmer
 use = 'blast'
 #Maximum number of sequences to return with blast
@@ -51,7 +51,7 @@ for i,tarSeq in enumerate(seqs[start:end], start):
         if use == 'phmmer':
             h,s = water.phmmer(tarSeq)
         else:
-            lines = water.blastp(tarSeq, max_seqs=maxs)
+            lines = water.blastp(tarSeq, max_seqs=maxs, outfmt="6 evalue sgi staxids sseq")
             for line in lines:
                 h.append(">" + "|".join(line.split("\t")[:3]))
                 s.append(line.split("\t")[-1])
