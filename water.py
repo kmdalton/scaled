@@ -1,3 +1,4 @@
+from multiprocessing import cpu_count
 import matplotlib.pyplot as plt
 from copy import deepcopy
 import re
@@ -294,6 +295,27 @@ def blastdbcmd(gi, outfmt):
     line = p.communicate()[0]
     line = re.sub('"', '', line)
     return line
+
+def blastp(seq, **kw):
+    """
+    Run blastp from the blast+ suite. Takes a seq as the first input and the following kwargs.
+
+    Keyword arguments:
+    db -- String. The name of the blast database to use. Defaults to 'nr'. 
+    procs -- The number of threads to utilize.  Defaults to the number reported from multiprocessing.cpu_count()
+    outfmt -- String. A format string for the results using the blastp formatting options. Defaults to '6 sgi staxids evalue sseq'. 
+    max_seqs -- Int or String. The maximum number of sequences to return from the blast query. Defaults to 1000.
+    """
+    db       = kw.get('db', 'nr')
+    outfmt   = kw.get('outfmt', '6\ sgi\ staxids\ evalue\ sseq')
+    procs    = kw.get('procs', cpu_count())
+    max_seqs = kw.get('max_seqs', 1000)
+    outfmt   = '"%s"' %outfmt
+
+    p = subprocess.Popen(["blastp","-db","nr","-outfmt",outfmt,"-max_target_seqs",str(max_seqs),"-query","-","-num_threads","%s" %procs], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+    lines = p.communicate(input=">tarSeq\n%s\n" %seq)[0]
+    lines = lines.split("\n")
+    return lines
 
 def doubleRegister(consensus, seq1, seq2):
     l1,l2 = len(seq1),len(seq2)
