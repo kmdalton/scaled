@@ -539,14 +539,22 @@ def seqWeights(mtx, **kw):
     return weights
 
 
-def shuffleProtein(mtx, boundary, prot = 1):
+def shuffleProtein(mtx, boundary, **kw):
     shuffled = deepcopy(mtx)
+    prot = kw.get('prot', 1)
+    axis = kw.get('axis', 1)
     if prot==1:
-        np.random.shuffle(shuffled[:,:boundary])
+        if axis == 1:
+            np.random.shuffle(shuffled[:,:boundary])
+        if axis == 0:
+            for i in shuffled:
+                np.random.shuffle(i[:boundary])
     elif prot==2:
-        np.random.shuffle(shuffled[:,boundary:])
-    else:
-        print "you suck."
+        if axis == 1:
+            np.random.shuffle(shuffled[:,:boundary])
+        if axis == 0:
+            for i in shuffled:
+                np.random.shuffle(i[:boundary])
     return shuffled
 
 def meanShift(mtx, **kw):
@@ -565,13 +573,13 @@ def meanShift(mtx, **kw):
     ms = MeanShift(bandwidth = H)
     clustercenters = None
     nnonunary = []
+    minH = None
     while nclusters > 1:
         ms = MeanShift(bandwidth = H)
         ms.fit(mtx)
         centers   = ms.cluster_centers_
         clusters  = ms.labels_
-        nclusters = np.shape(np.where(np.bincount(clusters) > 0))[1]
-        nunary    = np.shape(np.where(np.bincount(clusters) ==1))[1]
-        nnonunary.append(nclusters - nunary)
-        H = H + dH
-    dn = np.array(nnonunary[1:]) - np.array(nnonunary[:-1])
+        nonunary  = np.shape(np.where(np.bincount(clusters) > 1))[1]
+        if nonunary:
+            H = H + dH
+    
