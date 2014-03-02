@@ -37,13 +37,14 @@ h,s = fasta.importFasta(inFN)
 nseqs  = len(h)
 digits = len(str(h))
 
-files = [searchDir + '{num:0{width}}.fa'.format(num=i, width=digits) for i in range(nseqs)]
+files = [i for i in os.listdir(searchDir) if i[-3:] == '.fa']
+files.sort(key = lambda x: int(x[:-3]))
 
 taxa = {}
 
 #First loop builds list of redundant taxa
 for FN in files:
-    with open(FN) as lines:
+    with open(searchDir + FN) as lines:
         for line in lines:
             if line[0] == '>':
                 taxids = line.split('|')[-1].split(';')
@@ -57,9 +58,10 @@ for k,v in taxa.items():
         taxa.pop(k, None)
 
 #Second loop filters fasta files to remove nonredundant taxa
+#Note -- this will also expand redundant sequences with different taxids into separate entries
 for FN in files:
-    outFN = outDir + FN.split('/')[-1] #Cheesy hack for this
-    with open(FN) as lines, open(outFN, 'w') as out:
+    outFN = outDir + FN 
+    with open(searchDir + FN) as lines, open(outFN, 'w') as out:
         for header in lines:
             taxids = header.split('|')[-1].split(';')
             header = '|'.join(header.split('|')[:-1]) + '\n'
