@@ -33,10 +33,6 @@ except OSError:
 #taxids that do not appear more than once in the database -- there cannot be coevolution info in 
 #a taxon that only appears once in one gene
 
-h,s = fasta.importFasta(inFN)
-nseqs  = len(h)
-digits = len(str(h))
-
 files = [i for i in os.listdir(searchDir) if i[-3:] == '.fa']
 files.sort(key = lambda x: int(x[:-3]))
 
