@@ -40,6 +40,6 @@ for FN in files[start:end]:
         print "Aligning %s ..." %FN
         outFN = FN[:-2] + 'aln'
         command = "clustalo -i %s -o %s" %(outDir + FN, outDir + outFN)
-        call(command)
+        call(command.split())
     except:
         print "There was an error aligning %s -- check the input file validity" %FN
