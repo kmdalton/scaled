@@ -59,9 +59,11 @@ for FN in files:
     with open(searchDir + FN) as lines, open(outDir + FN, 'w') as out:
         for header in lines:
             seq    = lines.next()
-            taxids = header.strip().split('|')[-1].split(';')
-            header = '|'.join(header.split('|')[:-1])
-            for taxid in taxids:
-                if taxid in taxa:
-                    out.write(header + "|%s\n" %taxid)
-                    out.write(seq)
+            #Only write out real amino acid sequences
+            if re.match(r'[^ACDEFGHIKLMNPQRSTVWY]', seq) is None:
+                taxids = header.strip().split('|')[-1].split(';')
+                header = '|'.join(header.split('|')[:-1])
+                for taxid in taxids:
+                    if taxid in taxa:
+                        out.write(header + "|%s\n" %taxid)
+                        out.write(seq)
