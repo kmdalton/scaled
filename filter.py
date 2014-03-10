@@ -43,7 +43,7 @@ for FN in files:
     with open(searchDir + FN) as lines:
         for line in lines:
             if line[0] == '>':
-                taxids = line.split('|')[-1].split(';')
+                taxids = line.strip().split('|')[-1].split(';')
                 for taxid in taxids:
                     if taxid in taxa:
                         taxa[taxid] = True
@@ -56,13 +56,12 @@ for k,v in taxa.items():
 #Second loop filters fasta files to remove nonredundant taxa
 #Note -- this will also expand redundant sequences with different taxids into separate entries
 for FN in files:
-    outFN = outDir + FN 
-    with open(searchDir + FN) as lines, open(outFN, 'w') as out:
+    with open(searchDir + FN) as lines, open(outDir + FN, 'w') as out:
         for header in lines:
-            taxids = header.split('|')[-1].split(';')
-            header = '|'.join(header.split('|')[:-1]) + '\n'
             seq    = lines.next()
+            taxids = header.strip().split('|')[-1].split(';')
+            header = '|'.join(header.split('|')[:-1])
             for taxid in taxids:
                 if taxid in taxa:
-                    out.write(header)
+                    out.write(header + "|%s\n" %taxid)
                     out.write(seq)
