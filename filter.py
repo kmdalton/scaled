@@ -5,7 +5,7 @@
 # speeds up the execution for the clustal.py                                  #
 ###############################################################################
 
-import water,fasta
+import water,fasta,re
 from sys import exit
 import os
 
