@@ -84,11 +84,18 @@ for FN1 in files[start:end]:
                     out1.write(">%s%s\n" %(header, seq1))
                     out2.write(">%s%s\n" %(header, seq2))
 
-            #Coupling matrix
+            #Do some filtering to clean up the alignment
             mtx1 = fullmsa.prune(fullmsa.binMatrix(s1), 1.)
             mtx2 = fullmsa.prune(fullmsa.binMatrix(s2), 1.)
             boundary = np.shape(mtx1)[1]
             mtx  = np.concatenate((mtx1, mtx2), axis=1)
+            mtx  = np.array([seq for seq in mtx if np.shape(np.where(seq == 20))[1] < 0.1*(np.shape(mtx)[1])])
+            mtx1 = fullmsa.prune(mtx[:,:boundary], 1.)
+            mtx2 = fullmsa.prune(mtx[:,boundary:], 1.)
+            boundary = np.shape(mtx1)[1]
+            mtx  = np.concatenate((mtx1, mtx2), axis=1)
+
+            #Coupling matrix
             c    = 1. - fullmsa.infoDistance(mtx)
             np.save(outDir + subDir + 'infodist.npy', c)
             plt.matshow(c)
