@@ -14,7 +14,7 @@ import os
 from matplotlib import pyplot as plt
 
 #Location of the proteome.fa file and the base directory for all the analysis
-headDir = '__ur_directory_goes_here__'
+headDir = '/home/kmdalton/DATUMS/test'
 maxSeqs = 10000 #The maximum number of phased sequence pairs to include in the alignment
 
 if headDir[-1] != '/':
@@ -84,33 +84,40 @@ for FN1 in files[start:end]:
                     out1.write(">%s%s\n" %(header, seq1))
                     out2.write(">%s%s\n" %(header, seq2))
 
-            #Coupling matrix
+            #Do some filtering to clean up the alignment
             mtx1 = fullmsa.prune(fullmsa.binMatrix(s1), 1.)
             mtx2 = fullmsa.prune(fullmsa.binMatrix(s2), 1.)
             boundary = np.shape(mtx1)[1]
             mtx  = np.concatenate((mtx1, mtx2), axis=1)
+            mtx  = np.array([seq for seq in mtx if np.shape(np.where(seq == 20))[1] < 0.1*(np.shape(mtx)[1])])
+            mtx1 = fullmsa.prune(mtx[:,:boundary], 1.)
+            mtx2 = fullmsa.prune(mtx[:,boundary:], 1.)
+            boundary = np.shape(mtx1)[1]
+            mtx  = np.concatenate((mtx1, mtx2), axis=1)
+
+            #Coupling matrix
             c    = 1. - fullmsa.infoDistance(mtx)
             np.save(outDir + subDir + 'infodist.npy', c)
-            plt.matshow(c)
-            plt.colorbar()
-            plt.savefig(outDir + subDir + 'infodist.png')
+            #plt.matshow(c)
+            #plt.colorbar()
+            #plt.savefig(outDir + subDir + 'infodist.png')
 
-            plt.matshow(c[boundary:,:boundary])
-            plt.colorbar()
-            plt.savefig(outDir + subDir + 'q1.png')
+            #plt.matshow(c[boundary:,:boundary])
+            #plt.colorbar()
+            #plt.savefig(outDir + subDir + 'q1.png')
             
             #Scrambled coupling matrix
             np.random.shuffle(mtx1)
             mtx  = np.concatenate((mtx1, mtx2), axis=1)
             c    = 1. - fullmsa.infoDistance(mtx)
             np.save(outDir + subDir + 'infodist_scrambled.npy', c)
-            plt.matshow(c)
-            plt.colorbar()
-            plt.savefig(outDir + subDir + 'infodist_scrambled.png')
+            #plt.matshow(c)
+            #plt.colorbar()
+            #plt.savefig(outDir + subDir + 'infodist_scrambled.png')
 
-            plt.matshow(c[boundary:,:boundary])
-            plt.colorbar()
-            plt.savefig(outDir + subDir + 'q1s.png')
+            #plt.matshow(c[boundary:,:boundary])
+            #plt.colorbar()
+            #plt.savefig(outDir + subDir + 'q1s.png')
             
             
             #Write out boundary
