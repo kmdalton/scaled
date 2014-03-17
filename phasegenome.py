@@ -14,7 +14,7 @@ import os
 from matplotlib import pyplot as plt
 
 #Location of the proteome.fa file and the base directory for all the analysis
-headDir = '/home/kmdalton/DATUMS/test'
+headDir = '__ur_directory_goes_here__'
 maxSeqs = 10000 #The maximum number of phased sequence pairs to include in the alignment
 
 if headDir[-1] != '/':
