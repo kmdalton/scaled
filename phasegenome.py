@@ -36,7 +36,7 @@ except OSError:
 files = [i for i in os.listdir(inDir) if i[-4:] == '.aln']
 files.sort(key=lambda x: int(x.split('.')[0])) #I want to sort the files for safety of multiple calls
 #Now we will interleave the filenames such that the load becomes balanced between threads...
-a,b   = files[::2],files[1::-2]
+a,b   = files[::2],files[1::2]
 files = a + b
 files[::2]  = a
 files[1::2] = b[::-1]
