@@ -60,7 +60,7 @@ for FN in files:
         for header in lines:
             seq    = lines.next()
             #Only write out real amino acid sequences
-            if re.match(r'[^ACDEFGHIKLMNPQRSTVWY]', seq) is None:
+            if re.search(r"[^ACDEFGHIKLMNPQRSTVWY\n]", seq) is None:
                 taxids = header.strip().split('|')[-1].split(';')
                 header = '|'.join(header.split('|')[:-1])
                 for taxid in taxids:
