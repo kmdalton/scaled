@@ -14,8 +14,13 @@ import os
 from matplotlib import pyplot as plt
 
 #Location of the proteome.fa file and the base directory for all the analysis
+#DEFAULT IS THE DIRECTORY FROM WHICH THE SCRIPT IS CALLED
 headDir = '__ur_directory_goes_here__'
 maxSeqs = 10000 #The maximum number of phased sequence pairs to include in the alignment
+
+#Default is the current directory
+if headDir == '__ur_directory_goes_here__':
+    headDir = os.path.abspath('.')
 
 if headDir[-1] != '/':
     headDir = headDir + '/'

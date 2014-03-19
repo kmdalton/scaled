@@ -10,11 +10,16 @@ from sys import exit
 import os
 
 #Location of the proteome.fa file and the base directory for all the analysis
+#DEFAULT IS THE DIRECTORY FROM WHICH THE SCRIPT IS CALLED
 headDir = '__ur_directory_goes_here__'
 #Set this to 'phmmer' to use phmmer
 use = 'blast'
 #Maximum number of sequences to return with blast
 maxs= 20000
+
+#Default is the current directory
+if headDir == '__ur_directory_goes_here__':
+    headDir = os.path.abspath('.')
 
 if headDir[-1] != '/':
     headDir = headDir + '/'
