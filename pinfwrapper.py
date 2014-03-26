@@ -1,84 +1,212 @@
-from time import time
 from ctypes import *
 import numpy as np
-import os,sys
+import fullmsa, os
+
 
 #Find the dynamic C-libs in the same directory as this file
 directoryPrefix = os.path.abspath(os.path.dirname(__file__))+'/'
+lib = directoryPrefix + 'inf.so'
+DLL = cdll.LoadLibrary(lib)
 
-# create c-based matrix
-def cMtx(mtx):
+def Redundancy(mtx):
+    M,L = np.shape(mtx)
+    I  = Inf(mtx)
+    H  = fullmsa.Entropy(mtx)
+    H  = np.ones((L,L))*H
+    return I/(H + H.T)
+
+def weightedRedundancy(mtx, W = None):
+    if W is None:
+        W = weights(mtx)
+    M,L = np.shape(mtx)
+    IW  = weightedInf(mtx, W)
+    HW  = weightedEntropy(mtx, W)
+    HW  = np.ones((L,L))*HW
+    return IW/(HW + HW.T)
+
+def infoDistance(mtx):
+    M,L = np.shape(mtx)
+    H = fullmsa.Entropy(mtx)
+    H = np.ones((L,L))*H
+    MI = Inf(mtx)
+    JH = JointH(mtx)
+    return (H + H.T - MI)/JH
+
+def weightedInfoDistance(mtx, W = None):
+    if W is None:
+        W  = weights(mtx)
+    M,L = np.shape(mtx)
+    HW = weightedEntropy(mtx, W)
+    HW = np.ones((L,L))*HW
+    MI = weightedInf(mtx, W)
+    JH = weightedJointH(mtx, W)
+    return (HW + HW.T - MI)/JH
+
+def weights(mtx):
+    M,L = np.shape(mtx)
+    weights = np.zeros(np.shape(mtx))
+    weights[np.where(mtx - mtx[0] == 0)] = 1
+    weights = np.sum(weights, axis=1)/float(L)
+    return weights
+
+def weightedEntropy(mtx, W=None):
+    if W is None:
+        W = weights(mtx)
     M, L = np.shape(mtx)
-    arrayConstructor = c_int*L*M
-    rowConstructor = c_int*L
-    msa = arrayConstructor(*tuple([rowConstructor(*tuple(mtx[i])) for i in range(M)]))
-    return msa
+    Mw = np.sum(W)
+    H = np.zeros(L)
+    for l in range(L):
+        for r in range(21):
+            if r in mtx[:,l]:
+                P = W[np.where(mtx[:,l] == r)]/Mw
+                P = np.sum(P)
+                H[l] += -P*np.log2(P)
+    return H
 
-# convert c matrix back to numpy
-def convertCtoNumpy(X, Y, mtx):
-    m = np.zeros([X,Y])
-    for i in xrange(X):
-        for j in xrange(Y):
-            m[i,j] = mtx[i][j]
+def weightedRedundancy(mtx, W = None):
+    if W is None:
+        W = weights(mtx)
+    M,L = np.shape(mtx)
+    I = weightedInf(mtx, W)
+    H = weightedEntropy(mtx)
+    H = np.ones((L,L))*H
+    return I/(H+H.T)
 
-# return the column-sum mutual information from covariance matrix
-def cMI(mtx):
-    mi = inf(mtx)
-    return np.sum(mi, axis = (0))
-
-# calculate mutual information
-def inf(mtx):
-    start = time()
+# calculate weighted mutual information
+def weightedInf(mtx, W):
     M, L = np.shape(mtx)
-    lib = directoryPrefix + 'pinf.so'
-    dll = cdll.LoadLibrary(lib)
-    Cij = dll.Cij
-    Cij.restype = c_voidp
-    Cij.argtypes = [
+    cfun = DLL.WeightedInf
+    cfun.restype = c_voidp
+    cfun.argtypes = [
         c_int,
         c_int,
-        c_int*L*M
+        c_int*L*M,
+        c_float*L*L,
+        c_float*M
     ]
+
+    #Make the mtx CArray
     arrayConstructor = c_int*L*M
     rowConstructor = c_int*L
-    msa = arrayConstructor(*tuple([rowConstructor(*tuple(mtx[i])) for i in range(M)]))
+    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
+
+    #Make the covariance matrix CArray
     arrayConstructor = c_float*L*L
     rowConstructor = c_float*L
     C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
-    #print 'Here we go! Starting information matrix calculation ...'
-    Cij(c_int(M), c_int(L), msa, C)
+
+    #Make the weight CArray
+    rowConstructor = c_float*M
+    W = rowConstructor(*tuple(W))
+
+    #Call the actual cfunction
+    cfun(c_int(M), c_int(L), msa, C, W)
+
+    #Turn the covariance matrix CArray into a numpy array
     B = np.zeros([L, L])
     for i in xrange(L):
         for j in xrange(L):
             B[i,j] = C[i][j]
-    #print 'We are done in %s seconds' %(time() - start)
     return B
 
-# calculate joint entropy
-def jointH(mtx):
-    start = time()
+# calculate weighted mutual information
+def weightedJointH(mtx, W):
     M, L = np.shape(mtx)
-    lib = directoryPrefix + 'joint.so'
-    dll = cdll.LoadLibrary(lib)
-    Cij = dll.Cij
-    Cij.restype = c_voidp
-    Cij.argtypes = [
+    cfun = DLL.WeightedJointH
+    cfun.restype = c_voidp
+    cfun.argtypes = [
         c_int,
         c_int,
-        c_int*L*M
+        c_int*L*M,
+        c_float*L*L,
+        c_float*M
     ]
+
+    #Make the mtx CArray
     arrayConstructor = c_int*L*M
     rowConstructor = c_int*L
-    msa = arrayConstructor(*tuple([rowConstructor(*tuple(mtx[i])) for i in range(M)]))
+    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
+
+    #Make the covariance matrix CArray
     arrayConstructor = c_float*L*L
     rowConstructor = c_float*L
     C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
-    #print 'Here we go! Starting information matrix calculation ...'
-    Cij(c_int(M), c_int(L), msa, C)
+
+    #Make the weight CArray
+    rowConstructor = c_float*M
+    W = rowConstructor(*tuple(W))
+
+    #Call the actual cfunction
+    cfun(c_int(M), c_int(L), msa, C, W)
+
+    #Turn the covariance matrix CArray into a numpy array
     B = np.zeros([L, L])
     for i in xrange(L):
         for j in xrange(L):
             B[i,j] = C[i][j]
-    #print 'We are done in %s seconds' %(time() - start)
+    return B
+
+# calculate weighted mutual information
+def Inf(mtx):
+    M, L = np.shape(mtx)
+    cfun = DLL.Inf
+    cfun.restype = c_voidp
+    cfun.argtypes = [
+        c_int,
+        c_int,
+        c_int*L*M,
+        c_float*L*L
+    ]
+
+    #Make the mtx CArray
+    arrayConstructor = c_int*L*M
+    rowConstructor = c_int*L
+    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
+
+    #Make the covariance matrix CArray
+    arrayConstructor = c_float*L*L
+    rowConstructor = c_float*L
+    C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
+
+    #Call the actual cfunction
+    cfun(c_int(M), c_int(L), msa, C)
+
+    #Turn the covariance matrix CArray into a numpy array
+    B = np.zeros([L, L])
+    for i in xrange(L):
+        for j in xrange(L):
+            B[i,j] = C[i][j]
+    return B
+
+# calculate weighted mutual information
+def JointH(mtx):
+    M, L = np.shape(mtx)
+    cfun = DLL.JointH
+    cfun.restype = c_voidp
+    cfun.argtypes = [
+        c_int,
+        c_int,
+        c_int*L*M,
+        c_float*L*L
+    ]
+
+    #Make the mtx CArray
+    arrayConstructor = c_int*L*M
+    rowConstructor = c_int*L
+    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
+
+    #Make the covariance matrix CArray
+    arrayConstructor = c_float*L*L
+    rowConstructor = c_float*L
+    C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
+
+    #Call the actual cfunction
+    cfun(c_int(M), c_int(L), msa, C)
+
+    #Turn the covariance matrix CArray into a numpy array
+    B = np.zeros([L, L])
+    for i in xrange(L):
+        for j in xrange(L):
+            B[i,j] = C[i][j]
     return B
 

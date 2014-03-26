@@ -17,8 +17,7 @@ def downloadNR():
 
 def compileCLibs():
     """Compile the pysca C-libraries. Requires gcc. Must be called from the pysca root directory."""
-    call(['gcc', '-std=c99', '-fPIC', '-shared', '-fopenmp', '-o', 'joint.so', 'joint.c'])
-    call(['gcc', '-std=c99', '-fPIC', '-shared', '-fopenmp', '-o', 'pinf.so', 'pinf.c'])
+    call(['gcc', '-std=c99', '-fPIC', '-shared', '-fopenmp', '-o', 'inf.so', 'inf.c'])
 
 
 if __name__=="__main__":
