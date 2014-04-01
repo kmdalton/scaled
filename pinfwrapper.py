@@ -30,7 +30,7 @@ def infoDistance(mtx):
     H = np.ones((L,L))*H
     MI = Inf(mtx)
     JH = JointH(mtx)
-    return (H + H.T - MI)/JH
+    return (H + H.T - 2*MI)/JH
 
 def weightedInfoDistance(mtx, W = None):
     if W is None:
@@ -40,7 +40,7 @@ def weightedInfoDistance(mtx, W = None):
     HW = np.ones((L,L))*HW
     MI = weightedInf(mtx, W)
     JH = weightedJointH(mtx, W)
-    return (HW + HW.T - MI)/JH
+    return (HW + HW.T - 2*MI)/JH
 
 def weights(mtx):
     M,L = np.shape(mtx)
