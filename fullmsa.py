@@ -359,7 +359,9 @@ def prune(mtx, cut = 1.0):
 def columns(mtx, cut = 0.9):
     m, f = getModesFreqs(mtx)
     cols = set(np.where(f < cut)[0]).intersection(set(np.where(m != 20)[0]))
-    return list(cols)
+    cols = list(cols)
+    cols.sort()
+    return cols
 
 def redundancy(mtx):
     M, L = np.shape(mtx)
@@ -417,7 +419,7 @@ def infoDistance(mtx,zerocase=1.):
     M,L = np.shape(mtx)
     H = Entropy(mtx)
     h = np.ones([L,L])*H
-    mi = pinfwrapper.inf(mtx)
+    mi = pinfwrapper.Inf(mtx)
     jH = pinfwrapper.jointH(mtx)
     jH = np.where(jH==0,np.nan,jH)
     infdist = (h + h.T - 2*mi)/jH
