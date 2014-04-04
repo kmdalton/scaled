@@ -361,7 +361,7 @@ def pruneAndRegister(mtx, cut = 1.0):
     cols = columns(mtx, cut)
     ats  = mtx[0] - 20
     ats[np.nonzero(ats)] = 1
-    ats[np.nonzero(ats)] = arange(np.sum(ats))
+    ats[np.nonzero(ats)] = np.arange(np.sum(ats))
     return mtx[:,cols], ats[cols]
 
 # returns columns which have a mode with frequence < cut (90% by default) 
