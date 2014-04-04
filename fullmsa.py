@@ -354,6 +354,16 @@ def prune(mtx, cut = 1.0):
     cols = columns(mtx, cut)
     return mtx[:,list(cols)]
 
+#prunes matrix of '-' consensus and registers the columns with the amino acid number
+#of the first sequence in the alignment. Returns a tuple consisting of the pruned matrix 
+#as a numpy array and a 1D numpy array corresponding to the first sequence derived ats
+def pruneAndRegister(mtx, cut = 1.0):
+    cols = columns(mtx, cut)
+    ats  = mtx[0] - 20
+    ats[nonzero(ats)] = 1
+    ats[nonzero(ats)] = arange(np.sum(ats))
+    return mtx[:,cols], ats[cols]
+
 # returns columns which have a mode with frequence < cut (90% by default) 
 # and are not dominated by '-' modes.
 def columns(mtx, cut = 0.9):
