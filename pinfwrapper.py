@@ -8,31 +8,40 @@ directoryPrefix = os.path.abspath(os.path.dirname(__file__))+'/'
 lib = directoryPrefix + 'inf.so'
 DLL = cdll.LoadLibrary(lib)
 
-def Redundancy(mtx):
+def Redundancy(mtx, **kw):
     M,L = np.shape(mtx)
     I  = Inf(mtx)
     H  = fullmsa.Entropy(mtx)
     H  = np.ones((L,L))*H
-    return I/(H + H.T)
 
-def weightedRedundancy(mtx, W = None):
+    zerocase = kw.get('zerocase', 1.)
+    H  = H + H.T
+    H[np.where(H == 0.)] = zerocase
+    return I/H
+
+def weightedRedundancy(mtx, W = None, **kw):
     if W is None:
         W = weights(mtx)
     M,L = np.shape(mtx)
     IW  = weightedInf(mtx, W)
     HW  = weightedEntropy(mtx, W)
     HW  = np.ones((L,L))*HW
-    return IW/(HW + HW.T)
+    zerocase = kw.get('zerocase', 1.)
+    HW  = HW + HW.T
+    HW[np.where(HW == 0.)] = zerocase
+    return IW/HW
 
-def infoDistance(mtx):
+def infoDistance(mtx, **kw):
     M,L = np.shape(mtx)
     H = fullmsa.Entropy(mtx)
     H = np.ones((L,L))*H
     MI = Inf(mtx)
     JH = JointH(mtx)
+    zerocase = kw.get('zerocase', 1.)
+    JH[np.where(JH == 0.)] = zerocase
     return (H + H.T - 2*MI)/JH
 
-def weightedInfoDistance(mtx, W = None):
+def weightedInfoDistance(mtx, W = None, **kw):
     if W is None:
         W  = weights(mtx)
     M,L = np.shape(mtx)
@@ -40,6 +49,8 @@ def weightedInfoDistance(mtx, W = None):
     HW = np.ones((L,L))*HW
     MI = weightedInf(mtx, W)
     JH = weightedJointH(mtx, W)
+    zerocase = kw.get('zerocase', 1.)
+    JH[np.where(JH == 0.)] = zerocase
     return (HW + HW.T - 2*MI)/JH
 
 def weights(mtx):
@@ -62,15 +73,6 @@ def weightedEntropy(mtx, W=None):
                 P = np.sum(P)
                 H[l] += -P*np.log2(P)
     return H
-
-def weightedRedundancy(mtx, W = None):
-    if W is None:
-        W = weights(mtx)
-    M,L = np.shape(mtx)
-    I = weightedInf(mtx, W)
-    H = weightedEntropy(mtx)
-    H = np.ones((L,L))*H
-    return I/(H+H.T)
 
 # calculate weighted mutual information
 def weightedInf(mtx, W):
