@@ -254,7 +254,7 @@ def booty(ic,mtx,iternumfactor=4):
     # the appended t on variables stands for temp.
     for l in range(numiter):
         # generate new eigenspace.
-        wtemp,vtemp = np.linalg.eigh(1.-infoDistance(resample(mtx)))
+        wtemp,vtemp = np.linalg.eigh(1.-pinfwrapper.infoDistance(resample(mtx)))
         idx = np.argsort(wtemp)
         vthresh = vtemp[:,idx[-tokeep:]]
         Kt,Wt,ICt = fastica(vthresh, n_components=tokeep, max_iter=20000, tol=.0001)
@@ -395,6 +395,19 @@ def Entropy(mtx):
             H[l] += -P[i]*np.log2(P[i])
     return H
 
+# Kullback Leibler divergence
+def Dkl(mtx, bgq = None):
+    if bgq is None:
+        bgq = estimateBGFreq(mtx)
+    M, L = np.shape(mtx)
+    D = np.zeros(L)
+    for l in range(L):
+        P = np.bincount(mtx[:,l], None, 21)/float(M)
+        for i in range(20):
+            if P[i] > 0. and bgq[i] > 0:
+                D[l] += P[i]*np.log2(P[i]/bgq[i])
+    return D
+
 # returns population frequency of amino acids each residue position in mtx
 def columnPops(mtx):
     M,L = np.shape(mtx)
@@ -430,17 +443,6 @@ def crossH(mtx):
     cH = np.sum(cH, axis = 2)
     return cH
 
-def infoDistance(mtx,zerocase=1.):
-    M,L = np.shape(mtx)
-    H = Entropy(mtx)
-    h = np.ones([L,L])*H
-    mi = pinfwrapper.Inf(mtx)
-    jH = pinfwrapper.jointH(mtx)
-    jH = np.where(jH==0,np.nan,jH)
-    infdist = (h + h.T - 2*mi)/jH
-    infdist = np.where(np.isnan(infdist),zerocase,infdist)
-    return infdist
-
 def clean(mtx, vecs):
     cleaned = np.zeros(np.shape(mtx))
     v,vec = np.linalg.eig(mtx)
@@ -470,7 +472,7 @@ def nEigs(mtx, **kw):
     """Calculate the statistical threshold for the number of eigenvectors to keep based on Rama's method. Takes an alignment matrix & returns an estimate of the number of important eigenvectors by iteratively shuffling the alignment columns to generate a significance threshold. Specify the desired covariance metric to be used with the kwarg metric = func. The metric defaults to 1. - infoDistance. Number of shufflings can be specified with the shuffles = int kwarg and defaults to 20."""
     shuffles = kw.get('shuffles', 20)
     eigval   = kw.get('eigval', -2)
-    metric   = kw.get('metric', lambda x: 1. - infoDistance(x))
+    metric   = kw.get('metric', lambda x: 1. - pinfwrapper.infoDistance(x))
 
     eigs = np.zeros(shuffles)
     M,L = np.shape(mtx)
@@ -511,7 +513,7 @@ def bootstrapMetric(mtx,**kw):
     """
 
     iternumfactor=kw.get('iternumfactor', 0.1)
-    metric = kw.get('metric', lambda x: 1.-infoDistance(x))
+    metric = kw.get('metric', lambda x: 1.-pinfwrapper.infoDistance(x))
 
 
     M,L = np.shape(mtx)
@@ -600,3 +602,9 @@ def meanShift(mtx, **kw):
         if nonunary:
             H = H + dH
     
+def topx(mtx, numpairs):
+    X,Y = np.indices(np.shape(mtx))
+    X,Y = X.flatten(),Y.flatten()
+    IND = np.argsort(mtx.flatten())[-numpairs:]
+    X,Y = X[IND],Y[IND]
+    return X,Y

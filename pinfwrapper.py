@@ -8,156 +8,44 @@ directoryPrefix = os.path.abspath(os.path.dirname(__file__))+'/'
 lib = directoryPrefix + 'inf.so'
 DLL = cdll.LoadLibrary(lib)
 
-def Redundancy(mtx, **kw):
-    M,L = np.shape(mtx)
-    I  = Inf(mtx)
-    H  = fullmsa.Entropy(mtx)
-    H  = np.ones((L,L))*H
-
-    zerocase = kw.get('zerocase', 1.)
-    H  = H + H.T
-    H[np.where(H == 0.)] = zerocase
-    return I/H
-
-def weightedRedundancy(mtx, W = None, **kw):
-    if W is None:
-        W = weights(mtx)
-    M,L = np.shape(mtx)
-    IW  = weightedInf(mtx, W)
-    HW  = weightedEntropy(mtx, W)
-    HW  = np.ones((L,L))*HW
-    zerocase = kw.get('zerocase', 1.)
-    HW  = HW + HW.T
-    HW[np.where(HW == 0.)] = zerocase
-    return IW/HW
-
-def infoDistance(mtx, **kw):
-    M,L = np.shape(mtx)
-    H = fullmsa.Entropy(mtx)
-    H = np.ones((L,L))*H
-    MI = Inf(mtx)
-    JH = JointH(mtx)
-    zerocase = kw.get('zerocase', 1.)
-    JH[np.where(JH == 0.)] = zerocase
-    return (H + H.T - 2*MI)/JH
-
-def weightedInfoDistance(mtx, W = None, **kw):
-    if W is None:
-        W  = weights(mtx)
-    M,L = np.shape(mtx)
-    HW = weightedEntropy(mtx, W)
-    HW = np.ones((L,L))*HW
-    MI = weightedInf(mtx, W)
-    JH = weightedJointH(mtx, W)
-    zerocase = kw.get('zerocase', 1.)
-    JH[np.where(JH == 0.)] = zerocase
-    return (HW + HW.T - 2*MI)/JH
-
-def weights(mtx):
-    M,L = np.shape(mtx)
-    weights = np.zeros(np.shape(mtx))
-    weights[np.where(mtx - mtx[0] == 0)] = 1
-    weights = np.sum(weights, axis=1)/float(L)
-    return weights
-
-def weightedEntropy(mtx, W=None):
-    if W is None:
-        W = weights(mtx)
-    M, L = np.shape(mtx)
-    Mw = np.sum(W)
-    H = np.zeros(L)
-    for l in range(L):
-        for r in range(21):
-            if r in mtx[:,l]:
-                P = W[np.where(mtx[:,l] == r)]/Mw
-                P = np.sum(P)
-                H[l] += -P*np.log2(P)
-    return H
-
 # calculate weighted mutual information
-def weightedInf(mtx, W):
+def Inf(mtx, **kwargs):
+    """
+    pinfwrapper.Inf(mtx, **kwargs)
+        Calculate the mutual information between columns in an alignment
+    
+    Parameters
+    ----------
+    mtx : numpy.ndarray
+        Numpy array representing the multiple sequence alignment
+
+    kwargs : {nogaps, weights}
+        nogaps:
+            Boolean- When True, omit residue pairs containing gaps from the probability distribution. 
+        weights:
+            Numpy Array- Supply a numpy array with the same length as the number of sequences in the alignment. The weights will be substituted in place of 1. in the summation of probability distributions for the infoDistance calculation. 
+    Returns
+    -------
+    An LxL numpy array of floats where L is np.shape(mtx)[1]
+    """
+
     M, L = np.shape(mtx)
-    cfun = DLL.WeightedInf
-    cfun.restype = c_voidp
-    cfun.argtypes = [
-        c_int,
-        c_int,
-        c_int*L*M,
-        c_float*L*L,
-        c_float*M
-    ]
 
-    #Make the mtx CArray
-    arrayConstructor = c_int*L*M
-    rowConstructor = c_int*L
-    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
+    nogaps = kwargs.get('nogaps', False)
+    PDSize = 21
+    if nogaps == True:
+        PDSize = 20
+    W = kwargs.get('weights', np.ones(M))
 
-    #Make the covariance matrix CArray
-    arrayConstructor = c_float*L*L
-    rowConstructor = c_float*L
-    C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
-
-    #Make the weight CArray
-    rowConstructor = c_float*M
-    W = rowConstructor(*tuple(W))
-
-    #Call the actual cfunction
-    cfun(c_int(M), c_int(L), msa, C, W)
-
-    #Turn the covariance matrix CArray into a numpy array
-    B = np.zeros([L, L])
-    for i in xrange(L):
-        for j in xrange(L):
-            B[i,j] = C[i][j]
-    return B
-
-# calculate weighted mutual information
-def weightedJointH(mtx, W):
-    M, L = np.shape(mtx)
-    cfun = DLL.WeightedJointH
-    cfun.restype = c_voidp
-    cfun.argtypes = [
-        c_int,
-        c_int,
-        c_int*L*M,
-        c_float*L*L,
-        c_float*M
-    ]
-
-    #Make the mtx CArray
-    arrayConstructor = c_int*L*M
-    rowConstructor = c_int*L
-    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
-
-    #Make the covariance matrix CArray
-    arrayConstructor = c_float*L*L
-    rowConstructor = c_float*L
-    C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
-
-    #Make the weight CArray
-    rowConstructor = c_float*M
-    W = rowConstructor(*tuple(W))
-
-    #Call the actual cfunction
-    cfun(c_int(M), c_int(L), msa, C, W)
-
-    #Turn the covariance matrix CArray into a numpy array
-    B = np.zeros([L, L])
-    for i in xrange(L):
-        for j in xrange(L):
-            B[i,j] = C[i][j]
-    return B
-
-# calculate weighted mutual information
-def Inf(mtx):
-    M, L = np.shape(mtx)
     cfun = DLL.Inf
     cfun.restype = c_voidp
     cfun.argtypes = [
-        c_int,
-        c_int,
-        c_int*L*M,
-        c_float*L*L
+        c_int, #M -- number of sequences
+        c_int, #L -- number of residues
+        c_int, #PDSize -- 20 means ignore gaps & 21 means include gaps
+        c_float*M, #Weights -- weighting factor for each sequence
+        c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
+        c_float*L*L, #Covariance matrix -- will be altered in place by c function
     ]
 
     #Make the mtx CArray
@@ -170,8 +58,12 @@ def Inf(mtx):
     rowConstructor = c_float*L
     C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
 
+    #Make the weight CArray
+    rowConstructor = c_float*M
+    W = rowConstructor(*tuple(W))
+
     #Call the actual cfunction
-    cfun(c_int(M), c_int(L), msa, C)
+    cfun(c_int(M), c_int(L), c_int(PDSize), W, msa, C)
 
     #Turn the covariance matrix CArray into a numpy array
     B = np.zeros([L, L])
@@ -181,15 +73,43 @@ def Inf(mtx):
     return B
 
 # calculate weighted mutual information
-def JointH(mtx):
+def JointH(mtx, **kwargs):
+    """
+    pinfwrapper.JointH(mtx, **kwargs)
+        Calculate the joint entropy between columns in an alignment
+    
+    Parameters
+    ----------
+    mtx : numpy.ndarray
+        Numpy array representing the multiple sequence alignment
+
+    kwargs : {nogaps, weights}
+        nogaps:
+            Boolean- When True, omit residue pairs containing gaps from the probability distribution. 
+        weights:
+            Numpy Array- Supply a numpy array with the same length as the number of sequences in the alignment. The weights will be substituted in place of 1. in the summation of probability distributions for the infoDistance calculation. 
+    Returns
+    -------
+    An LxL numpy array of floats where L is np.shape(mtx)[1]
+    """
+
     M, L = np.shape(mtx)
+
+    nogaps = kwargs.get('nogaps', False)
+    PDSize = 21
+    if nogaps == True:
+        PDSize = 20
+    W = kwargs.get('weights', np.ones(M))
+
     cfun = DLL.JointH
     cfun.restype = c_voidp
     cfun.argtypes = [
-        c_int,
-        c_int,
-        c_int*L*M,
-        c_float*L*L
+        c_int, #M -- number of sequences
+        c_int, #L -- number of residues
+        c_int, #PDSize -- 20 means ignore gaps & 21 means include gaps
+        c_float*M, #Weights -- weighting factor for each sequence
+        c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
+        c_float*L*L, #Covariance matrix -- will be altered in place by c function
     ]
 
     #Make the mtx CArray
@@ -202,8 +122,140 @@ def JointH(mtx):
     rowConstructor = c_float*L
     C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
 
+    #Make the weight CArray
+    rowConstructor = c_float*M
+    W = rowConstructor(*tuple(W))
+
     #Call the actual cfunction
-    cfun(c_int(M), c_int(L), msa, C)
+    cfun(c_int(M), c_int(L), c_int(PDSize), W, msa, C)
+
+    #Turn the covariance matrix CArray into a numpy array
+    B = np.zeros([L, L])
+    for i in xrange(L):
+        for j in xrange(L):
+            B[i,j] = C[i][j]
+    return B
+
+# calculate weighted mutual information
+def PairWiseEntropy(mtx, **kwargs):
+    """
+    pinfwrapper.PairWiseEntropy(mtx, **kwargs)
+        Calculate the sum of entropies for two columns as conditioned by sequence weights and/or gap treatment
+    
+    Parameters
+    ----------
+    mtx : numpy.ndarray
+        Numpy array representing the multiple sequence alignment
+
+    kwargs : {nogaps, weights}
+        nogaps:
+            Boolean- When True, omit residue pairs containing gaps from the probability distribution. 
+        weights:
+            Numpy Array- Supply a numpy array with the same length as the number of sequences in the alignment. The weights will be substituted in place of 1. in the summation of probability distributions for the infoDistance calculation. 
+    Returns
+    -------
+    An LxL numpy array of floats where L is np.shape(mtx)[1]
+    """
+
+    M, L = np.shape(mtx)
+
+    nogaps = kwargs.get('nogaps', False)
+    PDSize = 21
+    if nogaps == True:
+        PDSize = 20
+    W = kwargs.get('weights', np.ones(M))
+
+    cfun = DLL.Entropy
+    cfun.restype = c_voidp
+    cfun.argtypes = [
+        c_int, #M -- number of sequences
+        c_int, #L -- number of residues
+        c_int, #PDSize -- 20 means ignore gaps & 21 means include gaps
+        c_float*M, #Weights -- weighting factor for each sequence
+        c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
+        c_float*L*L, #Covariance matrix -- will be altered in place by c function
+    ]
+
+    #Make the mtx CArray
+    arrayConstructor = c_int*L*M
+    rowConstructor = c_int*L
+    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
+
+    #Make the covariance matrix CArray
+    arrayConstructor = c_float*L*L
+    rowConstructor = c_float*L
+    C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
+
+    #Make the weight CArray
+    rowConstructor = c_float*M
+    W = rowConstructor(*tuple(W))
+
+    #Call the actual cfunction
+    cfun(c_int(M), c_int(L), c_int(PDSize), W, msa, C)
+
+    #Turn the covariance matrix CArray into a numpy array
+    B = np.zeros([L, L])
+    for i in xrange(L):
+        for j in xrange(L):
+            B[i,j] = C[i][j]
+    return B
+
+# calculate weighted mutual information
+def infoDistance(mtx, **kwargs):
+    """
+    pinfwrapper.infoDistance(mtx, **kwargs)
+        This function is meant to consolidate all the versions of infodistance and to allow for customization via kwargs. Defaults to vanilla infoDistance.
+    
+    Parameters
+    ----------
+    mtx : numpy.ndarray
+        Numpy array representing the multiple sequence alignment
+
+    kwargs : {nogaps, weights, zerocase}
+        nogaps:
+            Boolean- When True, omit residue pairs containing gaps from the infodistance probability distribution. *Note that this metric no longer obeys the triangle inequality but seems to perform better for lower quality alignments
+        weights:
+            Numpy Array- Supply a numpy array with the same length as the number of sequences in the alignment. The weights will be substituted in place of 1. in the summation of probability distributions for the infoDistance calculation. 
+        zerocase:
+            float- What value should infoDistance take when the joint probibility distribution is zero. The default value is 0.
+    """
+    M, L = np.shape(mtx)
+
+    nogaps = kwargs.get('nogaps', False)
+    zerocase = kwargs.get('zerocase', 0.)
+    PDSize = 21
+    if nogaps == True:
+        PDSize = 20
+    W = kwargs.get('weights', np.ones(M))
+
+    cfun = DLL.infoDistance
+    cfun.restype = c_voidp
+    cfun.argtypes = [
+        c_int, #M -- number of sequences
+        c_int, #L -- number of residues
+        c_int, #PDSize -- 20 means ignore gaps & 21 means include gaps
+        c_float, #zerocase -- what value should it take when the joint entropy is zero?
+        c_float*M, #Weights -- weighting factor for each sequence
+        c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
+        c_float*L*L, #Covariance matrix -- will be altered in place by c function
+    ]
+
+    #Make the mtx CArray
+    arrayConstructor = c_int*L*M
+    rowConstructor = c_int*L
+    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
+
+    #Make the covariance matrix CArray
+    arrayConstructor = c_float*L*L
+    rowConstructor = c_float*L
+    C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
+
+    #Make the weight CArray
+    rowConstructor = c_float*M
+    W = rowConstructor(*tuple(W))
+
+    #Call the actual cfunction
+    cfun(c_int(M), c_int(L), c_int(PDSize), c_float(zerocase), W, msa, C)
 
     #Turn the covariance matrix CArray into a numpy array
     B = np.zeros([L, L])
