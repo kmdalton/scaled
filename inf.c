@@ -197,7 +197,7 @@ void infoDistance(int M, int L, int PDSize, float zerocase, float weights[M], in
                     }
                 }
 
-                if (JH == 1.)
+                if (JH == 0.)
                     CovIJ[j][i] = CovIJ[i][j] = zerocase;
                 else
                     CovIJ[j][i] = CovIJ[i][j] = (Hi + Hj - 2*MI)/JH;
