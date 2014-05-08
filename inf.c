@@ -5,7 +5,7 @@
 /* ##############################################################
 Note on compilation: to make this fucker into a dynamic C-libary 
 accessible from python run the following command:
-gcc -std=c99 -fPIC -shared -fopenmp -o pinf.so pinf.c
+gcc -std=c99 -fPIC -shared -fopenmp -o inf.so inf.c
 if you do anything else you will be sad.
 ################################################################# */
 
