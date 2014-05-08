@@ -53,7 +53,16 @@ def reorder(mtx,**kw):
     re-orders the mtx MSA matrx according to similarity to ref sequence 
     (default: refseqind=0)
     """
+    
     refseqind = kw.get('refseqind',0)
+    mtxc = mtx
+    if refseqind:
+        mtxc[refseqind] = mtx[0]
+        mtxc[0] = mtxc[refseqind]
+
+    s = JCdistance(mtxc)
+    mtxr = mtxc[np.argsort(s[1])]
+
     return mtxr
 
 def metricBySequence(mtx,truncstep,**kw):
