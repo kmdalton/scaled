@@ -9,8 +9,44 @@ import pinfwrapper
 from sklearn.decomposition import fastica
 from sklearn.cluster import MeanShift
 from scipy.stats import t
+import warnings
 
-import fullmsa
+def JCdistance(seqmat):
+    """ 
+    returns distance between the first sequence and the rest
+    of the sequences, with gap characters treated as an amino acid, except where 
+    both sequences have gaps. (gap = 40)
+    
+    seqmat is a numseq by numpos numerical matrix of amino acids.
+
+    identity is the proportion of positions the same
+    JC is the Jukes-Cantor Distance, with 21 possible aa
+    JCsigma is the Jukes-Cantor variance
+    """
+
+    [numseq,numpos] = seqmat.shape
+    effseqlength = np.sum(np.where(np.tile(seqmat[0],[numseq,1])+seqmat!=40,1,0),axis=1,dtype=np.double)
+    
+    # nan never equals nan, so we can use this as a way of ignoring gap characters.
+    seqmatnan = np.where(seqmat==20,np.nan,seqmat)
+    identity = np.sum(np.tile(seqmatnan[0],[numseq,1])==seqmatnan,axis=1,dtype=np.double)/effseqlength
+    p = 1.-identity
+    
+    # There's something you need to know man,
+    # JC bottoms out at p>=.75. So, lets take care of that by ... changing them.
+    # We'll use a warning just in case.
+    warnings.warn('Hey dude, some of your sequences are total shit')
+    p = np.where(p<20./21.,p,20./21.-.0001)
+    
+
+    # now calculate the distance metrics.
+    JC = np.zeros(numseq)
+    JC[1:] = -20./21.*np.log(1.-21./20.*p[1:])
+    
+    JCsigma = p*(1.-p)/(effseqlength*(1.-21./20.*p)**2.)
+
+    return [identity,JC,JCsigma]
+
 
 def reorder(mtx,**kw):
     """"
