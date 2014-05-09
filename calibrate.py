@@ -66,7 +66,7 @@ def reorder(mtx,**kw):
 
     return mtxr
 
-def metricBySequence(mtx,truncstep,**kw):
+def metricBySequence(mtx,truncs,**kw):
     """ 
     calculates metric for varying truncations of MSA, in steps of truncstep
     default: metric = 1-infoDistance(mtx)
@@ -80,7 +80,7 @@ def metricBySequence(mtx,truncstep,**kw):
     iternumfactor   = kw.get('iternumfactor', .01)
 
     results = []
-    for seqlength in range(10,numseq,truncstep):
+    for seqlength in np.linspace(10,numseq,truncs):
         if not bootstrap:
             curmetric = metric(mtx[:seqlength])
         else:
@@ -89,14 +89,43 @@ def metricBySequence(mtx,truncstep,**kw):
 
     return results
 
-def sectorDelta(mtx,refBandwidth):
+def sectorDelta(mtx,**kw):
     """ 
-    Looks at how sequence truncation and MeanShfit bandwidth affect the correspondence of 
+    Looks at how sequence truncation and MeanShfit bandwidth affect the number of
     sectors relative to a reference bandwidth for the full MSA
     """
+    refseqind = kw.get('refseqind',0)
 
+    numbandtry = 50
+    numseqtry = 20
     
+    mtxr = reorder(mtx,refseqind=refseqind)
+
+    [numseqs,numpos] = mtx.shape
+    seqnums = np.linspace(10,numseqs,numseqtry)
+    
+    seqByBand = np.zeros([numseqtry,numbandtry])
+    
+    cps = metricBySequence(mtxr,numseqtry,bootstrap=True,iternumfactor=.01)
+
+    for curseq in range(numseqtry):
+        seqByBand[curseq,:] = sectorSearch(cps[curseq],numtry=numbandtry)[1]
+
     return seqByBand
 
-
-def 
+def sectorSearch(Cp,**kw):
+    """
+    Tries a bunch of bandwidths and returns a pair of arrays 'bandwidth' and 'numsec', describing the
+    number of non-unary sectors as a function of the bandwidth.
+    """
+    numtry = kw.get('numtry',50)
+    numsector = np.zeros(numtry)
+    bands = np.linspace(.01,5,numtry)
+    mtxt = Cp
+    for j in range(numtry):
+        ms = None
+        ms = MeanShift(bandwidth=bands[j],seeds=mtxt)
+        ms.fit(Cp)
+        numsector[j] = np.sum(np.array([np.sum(ms.labels_==i) for i in np.unique(ms.labels_)])>1)
+        mtxt = ms.cluster_centers_
+    return [bands,numsector]
