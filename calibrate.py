@@ -126,6 +126,6 @@ def sectorSearch(Cp,**kw):
         ms = None
         ms = MeanShift(bandwidth=bands[j],seeds=mtxt)
         ms.fit(Cp)
-        numsector[j] = np.sum(np.array([np.sum(ms.labels_==i) for i in np.unique(ms.labels_)])>1)
+        numsector[j] = np.sum(np.array([np.sum(ms.labels_==i) for i in np.unique(ms.labels_)])>10)
         mtxt = ms.cluster_centers_
     return [bands,numsector]
