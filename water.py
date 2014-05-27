@@ -1,12 +1,7 @@
 from multiprocessing import cpu_count
-import matplotlib.pyplot as plt
+import re,os,string,subprocess,urllib2
 from copy import deepcopy
-import re
-import os
-import pickle
 import numpy as np
-import string
-import subprocess
 
 #This tells the script where to find the sequences database
 directoryPrefix = os.path.dirname(os.path.abspath(__file__)) + '/'
@@ -305,17 +300,35 @@ def blastp(seq, **kw):
     procs -- The number of threads to utilize.  Defaults to the number reported from multiprocessing.cpu_count()
     outfmt -- String. A format string for the results using the blastp formatting options. As with the blast interface, this is a space-delimited set of format features. For a comprehensive list of available options please see the blast documentations. Defaults to '6 sgi staxids evalue sseq' which produces a tab deliminited list containing the subject GI, subject taxid(s), subject evalue and finally the matching portion of the subject sequences.
     max_seqs -- Int or String. The maximum number of sequences to return from the blast query. Defaults to 1000.
+    remote -- Boolean. If True, run the job remotely on the ncbi server. This will automatically set procs to 1. 
     """
     db       = kw.get('db', 'nr')
     outfmt   = kw.get('outfmt', '6 evalue sgi staxids sseq')
     outfmt   = "'%s'" %outfmt
     procs    = kw.get('procs', cpu_count())
-    max_seqs = kw.get('max_seqs', 1000)
-    arguments = ["blastp","-db","nr","-max_target_seqs",str(max_seqs),"-query","-","-num_threads","%s" %procs,"-outfmt",outfmt]
+    max_seqs = kw.get('max_seqs', 20000)
+    remote   = kw.get('remote', False)
+    if remote:
+        arguments = ["blastp",
+                     "-db",db,
+                     "-max_target_seqs",str(max_seqs),
+                     "-num_descriptions",str(max_seqs),
+                     "-num_alignments",str(max_seqs),
+                     "-query","-",
+                     "-outfmt",outfmt,
+                     "-remote"
+                     ]
+    else:
+        arguments = ["blastp",
+                     "-db",db,
+                     "-max_target_seqs",str(max_seqs),
+                     "-query","-",
+                     "-num_threads","%s" %procs,
+                     "-outfmt",outfmt
+                     ]
     p = subprocess.Popen(' '.join(arguments), stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     lines = p.communicate(input=">tarSeq\n%s\n" %seq)[0]
-    lines = lines.split("\n")
-    return lines[:-1] #The last line is empty
+    return lines 
 
 def doubleRegister(consensus, seq1, seq2):
     l1,l2 = len(seq1),len(seq2)
@@ -328,3 +341,132 @@ def doubleRegister(consensus, seq1, seq2):
     tmpats[np.where(ats) == None] = ats.max()
     boundary = np.argmin(tmpats[1:] -  tmpats[:-1]) + 1
     return ats, boundary
+
+
+def ncbiGet(RID, **kw):
+    """
+    make an ncbi get request
+
+    Parameters
+    ----------
+    RID : the request ID you wish to query blast about
+    kwargs : { ALIGNMENTS, ALIGNMENT_VIEW, DESCRIPTIONS, ENTREZ_LINKS_NEW_WINDOW, EXPECT_LOW, EXPECT_HIGH, FORMAT_ENTREZ_QUERY, FORMAT_OBJECT, FORMAT_TYPE, NCBI_GI, RID, RESULTS_FILE, SERVICE, SHOW_OVERVIEW }
+        kwargs are verbatim those supported by the blast REST API with CMD=Get. (http://www.ncbi.nlm.nih.gov/blast/Doc/node6.html)
+    """
+    BaseURL = "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?CMD=Get&"
+    GetKwargs = ['ALIGNMENTS',
+                 'ALIGNMENT_VIEW',
+                 'DESCRIPTIONS',
+                 'ENTREZ_LINKS_NEW_WINDOW',
+                 'EXPECT_LOW',
+                 'EXPECT_HIGH',
+                 'FORMAT_ENTREZ_QUERY',
+                 'FORMAT_OBJECT',
+                 'FORMAT_TYPE',
+                 'NCBI_GI',
+                 'RID',
+                 'RESULTS_FILE',
+                 'SERVICE',
+                 'SHOW_OVERVIEW'
+                ]
+    kw['RID'] = str(RID)
+    QueryString = '&'.join(['='.join((i, str(kw[i]))) for i in GetKwargs if i in kw])
+    #print BaseURL + QueryString
+    URL = urllib2.urlopen(BaseURL + QueryString)
+    return URL.read()
+
+
+def ncbiPut(seq, **kw):
+    """
+    webBlast(seq, **kwargs)
+        Make a call to the ncbi webserver to run BLAST.
+
+    Parameters
+    ----------
+    seq : Input protein or nucleic acid sequence
+
+    kwargs : { AUTO_FORMAT, COMPOSITION_BASED_STATISTICS, DATABASE, DB_GENETIC_CODE, ENDPOINTS, ENTREZ_QUERY, EXPECT, FILTER, GAPCOSTS, GENETIC_CODE, HITLIST_SIZE, I_THRESH, LAYOUT, LCASE_MASK, MATRIX_NAME, NUCL_PENALTY, NUCL_REWARD, OTHER_ADVANCED, PERC_IDENT, PHI_PATTERN, PROGRAM, QUERY, QUERY_FILE, QUERY_BELIEVE_DEFLINE, QUERY_FROM, QUERY_TO, SEARCHSP_EFF, SERVICE, THRESHOLD, UNGAPPED_ALIGNMENT, WORD_SIZE }
+    
+        kwargs are verbatim those supported by the blast REST API with CMD=Put. The values will default to a vanilla blastp search which returns fasta formatted sequences with gids for headers. (http://www.ncbi.nlm.nih.gov/blast/Doc/node5.html)
+
+    Returns
+    -------
+    Tuple (RID\string, WAITTIME\int) 
+        RID: blast request ID (RID) which will be used to retrieve the results later with a Get request
+        WAITTIME: blast returns an estimate of the amount of time in seconds the search will take
+    """
+    BaseURL = "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?CMD=Put&"
+    PutKwargs = ['AUTO_FORMAT',
+                'COMPOSITION_BASED_STATISTICS',
+                'DATABASE',
+                'DB_GENETIC_CODE',
+                'ENDPOINTS',
+                'ENTREZ_QUERY',
+                'EXPECT',
+                'FILTER',
+                'GAPCOSTS',
+                'GENETIC_CODE',
+                'HITLIST_SIZE',
+                'I_THRESH',
+                'LAYOUT',
+                'LCASE_MASK',
+                'MATRIX_NAME',
+                'NUCL_PENALTY',
+                'NUCL_REWARD',
+                'OTHER_ADVANCED',
+                'PERC_IDENT',
+                'PHI_PATTERN',
+                'PROGRAM',
+                'QUERY',
+                'QUERY_FILE',
+                'QUERY_BELIEVE_DEFLINE',
+                'QUERY_FROM',
+                'QUERY_TO',
+                'SEARCHSP_EFF',
+                'SERVICE',
+                'THRESHOLD',
+                'UNGAPPED_ALIGNMENT',
+                'WORD_SIZE'
+                ]
+    kw['QUERY'] = seq
+    kw['HITLIST_SIZE'] = kw.get('HITLIST_SIZE', 20000)
+    kw['DATABASE'] = kw.get('DATABASE', 'nr')
+    kw['PROGRAM'] = kw.get('PROGRAM', 'blastp')
+
+    QueryString = '&'.join(['='.join((i, str(kw[i]))) for i in PutKwargs if i in kw])
+    
+    U  = urllib2.urlopen(BaseURL + QueryString)
+    html = U.read()
+    QBlastInfo = re.search(r"\<\!\-\-QBlastInfoBegin.+QBlastInfoEnd", html, re.DOTALL)
+    QBlastInfo = QBlastInfo.group()
+    RID        = QBlastInfo.split()[3]
+    WAITTIME   = QBlastInfo.split()[6]
+    try:
+        WAITTIME = int(WAITTIME)
+    except ValueError:
+        print "Warning, invalid wait time returned by blast"
+
+    return RID, WAITTIME
+
+def ncbiDelete(RID):
+    """
+    delete a qblast RID from NCBI's servers
+
+    Parameters
+    ----------
+    RID : the request ID you wish to delete
+    """
+    BaseURL = "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?CMD=Delete&"
+    URL = urllib2.urlopen(BaseURL + "RID=%s" %RID)
+    URL.read()
+
+def blastFormatter(RID, **kw):
+    outfmt   = kw.get('outfmt', '6 evalue sgi staxids sseq')
+    outfmt   = "'%s'" %outfmt
+    arguments = ["blast_formatter","-rid",str(RID),"-outfmt",outfmt]
+    p = subprocess.Popen(' '.join(arguments), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    #p = subprocess.Popen(' '.join(arguments), stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    lines = p.communicate()
+    return lines
+    #lines = lines.split("\n")
+    #return lines[:-1] #The last line is empty
