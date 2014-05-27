@@ -312,11 +312,11 @@ def blastp(seq, **kw):
         arguments = ["blastp",
                      "-db",db,
                      "-max_target_seqs",str(max_seqs),
-                     "-num_descriptions",str(max_seqs),
-                     "-num_alignments",str(max_seqs),
+                     #"-num_descriptions",str(max_seqs),
+                     #"-num_alignments",str(max_seqs),
                      "-query","-",
                      "-outfmt",outfmt,
-                     "-remote"
+                     "-remote",
                      ]
     else:
         arguments = ["blastp",
