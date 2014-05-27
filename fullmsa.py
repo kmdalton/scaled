@@ -386,11 +386,15 @@ def redundancy(mtx):
     return mI/h
 
 # Shannon entropy
-def Entropy(mtx):
+def Entropy(mtx, **kw):
+    nogaps = kw.get('nogaps', False)
+    MPDSize= 21
+    if nogaps:
+        MPDSize = 20
     M, L = np.shape(mtx)
     H = np.zeros(L)
     for l in range(L):
-        P = np.bincount(mtx[:,l], None, 21)/float(M)
+        P = np.bincount(mtx[:,l], None, 21)[:MPDSize]/float(M)
         for i in np.where(P > 0.)[0]:
             H[l] += -P[i]*np.log2(P[i])
     return H
