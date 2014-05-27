@@ -19,6 +19,7 @@ Available through apt-get:
 -python >= 2.6 #Should already be installed on most systems
 -GCC the gnu compiler collection
 -redis (http://redis.io/) #Redis reccommends compiling this from source
+-NCBI Blast+ (http://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download)
 
 Available through pip:
 -rq: the redis queue for python (http://python-rq.org/)
