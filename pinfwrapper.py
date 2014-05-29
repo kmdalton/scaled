@@ -45,7 +45,7 @@ def Inf(mtx, **kwargs):
         c_int, #PDSize -- 20 means ignore gaps & 21 means include gaps
         c_float*M, #Weights -- weighting factor for each sequence
         c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
-        c_float*L*L, #Covariance matrix -- will be altered in place by c function
+        c_float*L*L #Covariance matrix -- will be altered in place by c function
     ]
 
     #Make the mtx CArray
@@ -109,7 +109,7 @@ def JointH(mtx, **kwargs):
         c_int, #PDSize -- 20 means ignore gaps & 21 means include gaps
         c_float*M, #Weights -- weighting factor for each sequence
         c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
-        c_float*L*L, #Covariance matrix -- will be altered in place by c function
+        c_float*L*L #Covariance matrix -- will be altered in place by c function
     ]
 
     #Make the mtx CArray
@@ -173,7 +173,7 @@ def PairWiseEntropy(mtx, **kwargs):
         c_int, #PDSize -- 20 means ignore gaps & 21 means include gaps
         c_float*M, #Weights -- weighting factor for each sequence
         c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
-        c_float*L*L, #Covariance matrix -- will be altered in place by c function
+        c_float*L*L #Covariance matrix -- will be altered in place by c function
     ]
 
     #Make the mtx CArray
@@ -237,7 +237,7 @@ def infoDistance(mtx, **kwargs):
         c_float, #zerocase -- what value should it take when the joint entropy is zero?
         c_float*M, #Weights -- weighting factor for each sequence
         c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
-        c_float*L*L, #Covariance matrix -- will be altered in place by c function
+        c_float*L*L #Covariance matrix -- will be altered in place by c function
     ]
 
     #Make the mtx CArray
@@ -264,3 +264,84 @@ def infoDistance(mtx, **kwargs):
             B[i,j] = C[i][j]
     return B
 
+
+# calculate weighted mutual information
+def OMES(mtx, **kwargs):
+    """
+    Calculate the observed minus expected squared metric for protein coevolution. 
+    Parameters
+    ----------
+    mtx : numpy.ndarray
+        Numpy array representing the multiple sequence alignment
+
+    kwargs : {nogaps, weights, zerocase}
+        nogaps:
+            Boolean- When True, omit residue pairs containing gaps from the infodistance probability distribution. Default is True for this metric to correspond with the published metric.
+        weights:
+            Numpy Array- Supply a numpy array with the same length as the number of sequences in the alignment. The weights will be substituted in place of 1. in the summation of probability distributions for the infoDistance calculation. 
+    """
+    M, L = np.shape(mtx)
+
+    nogaps = kwargs.get('nogaps', True)
+    PDSize = 21
+    if nogaps == True:
+        PDSize = 20
+    W = kwargs.get('weights', np.ones(M))
+
+    cfun = DLL.OMES
+    cfun.restype = c_voidp
+    cfun.argtypes = [
+        c_int, #M -- number of sequences
+        c_int, #L -- number of residues
+        c_int, #PDSize -- 20 means ignore gaps & 21 means include gaps
+        c_float*M, #Weights -- weighting factor for each sequence
+        c_int*L*M, #alignment matrix -- make with fullmsa.binMatrix
+        c_float*L*L #Covariance matrix -- will be altered in place by c function
+    ]
+
+    #Make the mtx CArray
+    arrayConstructor = c_int*L*M
+    rowConstructor = c_int*L
+    msa = arrayConstructor(*tuple([rowConstructor(*tuple(i)) for i in mtx]))
+
+    #Make the covariance matrix CArray
+    arrayConstructor = c_float*L*L
+    rowConstructor = c_float*L
+    C = arrayConstructor(*tuple([rowConstructor(*tuple([0.]*L)) for i in range(L)]))
+
+    #Make the weight CArray
+    rowConstructor = c_float*M
+    W = rowConstructor(*tuple(W))
+
+    #Call the actual cfunction
+    cfun(c_int(M), c_int(L), c_int(PDSize), W, msa, C)
+
+    #Turn the covariance matrix CArray into a numpy array
+    B = np.zeros([L, L])
+    for i in xrange(L):
+        for j in xrange(L):
+            B[i,j] = C[i][j]
+    return B
+
+
+# calculate weighted mutual information
+def MINT(mtx, **kwargs):
+    """
+    pinfwrapper.MINT(mtx, **kwargs)
+        Calculate the mutual interdependency correction (Tillier & Liu). 
+    
+    Parameters
+    ----------
+    mtx : numpy.ndarray
+        Numpy array representing the multiple sequence alignment
+
+    kwargs : {nogaps, weights}
+        nogaps:
+            Boolean- When True, omit residue pairs containing gaps from the probability distribution. Defaults to True as defined by Tillier and Liu.
+        weights:
+            Numpy Array- Supply a numpy array with the same length as the number of sequences in the alignment. The weights will be substituted in place of 1. in the summation of probability distributions for the infoDistance calculation. 
+    Returns
+    -------
+    An LxL numpy array of floats where L is np.shape(mtx)[1]
+    """
+    I = Inf(mtx, nogaps=kwargs.get('nogaps', True))
