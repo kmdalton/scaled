@@ -104,22 +104,23 @@ class pdbDB():
         self.pdbFN = pdbFN
         lines = open(pdbFN).readlines()
         self.lines = lines
-        lines = [line for line in lines if lines[:4] == 'ATOM']
+        lines = [line for line in lines if line[:4] == 'ATOM']
         for line in lines:
             self.addAtom(line)
 
     def addAtom(self, line):
-        atom = atom(line)
-        chainID = atom['CHAIN']
-        resNum = atom['RESNUM']
-        atomType = atom['ATOMTYPE']
+        newAtom = atom(line)
+        chainID = newAtom['CHAIN']
+        resNum = newAtom['RESNUM']
+        atomType = newAtom['ATOMTYPE']
         if chainID not in self.chains:
             self.chains[chainID] = {}
+            self.alphas[chainID] = {}
         if str(resNum) not in self.chains[chainID]:
             self.chains[chainID][str(resNum)] = {}
-        self.chains[chainID][str(resNum)]['ATOMTYPE'] = atom
+        self.chains[chainID][str(resNum)]['ATOMTYPE'] = newAtom
         if atomType == 'CA':
-            self.alphas[chainID][str(resNum)] = atom
+            self.alphas[chainID][str(resNum)] = newAtom
             
     def calphaDistMat(self, chainID):
         return distMat(self.alphas[chainID])
