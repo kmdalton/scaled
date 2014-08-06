@@ -1,6 +1,9 @@
+#Standard libs
 from ctypes import *
+import os
+
+#Scientific Python libs
 import numpy as np
-import fullmsa, os
 
 
 #Find the dynamic C-libs in the same directory as this file

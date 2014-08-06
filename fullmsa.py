@@ -1,14 +1,17 @@
-import numpy as np
-import pdbFile
-import fasta
+#Standard libs
 import re
 from copy import deepcopy
 from time import time
-from multiprocessing import cpu_count
+
+#Scientific Python libs
+import numpy as np
 import pinfwrapper
 from sklearn.decomposition import fastica
 from sklearn.cluster import MeanShift
 from scipy.stats import t
+
+#Pysca libs
+import pdbFile
 
 #Includes the gap character!
 AminoAcids = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y','-']
@@ -309,22 +312,6 @@ def alignICs(unalignedIC, targetIC):
     signed = np.ones(np.shape(unalignedIC))*signs*unalignedIC
     aligned= signed[:,ind]
     return aligned
-
-def naiveTopt(icm,cutoff=.05): #like topt but doesn't correct for tail direction
-    """ Returns cluster by fitting t-test and returning residues above cutoff """
-    
-    param = t.fit(icm,loc=np.median(icm))
-    x = np.linspace(-1,1,200)
-    cdf = t.cdf(x,param[0],loc=param[1], scale=param[2])
-
-    minx = np.max(x[np.nonzero(cdf<cutoff)])
-
-    # deal with direction of tail:
-    cursect = np.array([i for i in range(icm.size) if icm[i]<minx])
-        
-    return cursect
-
-
 
 def topt(icm,cutoff=.05):
     """ Returns cluster by fitting t-test and returning residues above cutoff """

@@ -1,6 +1,9 @@
+#Standard libs
 from multiprocessing import cpu_count
-import re,os,string,subprocess,urllib2
 from copy import deepcopy
+import re,os,string,subprocess,urllib2
+
+#Scientific Python libs
 import numpy as np
 
 #This tells the script where to find the sequences database
