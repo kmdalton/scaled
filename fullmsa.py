@@ -365,9 +365,18 @@ def pruneAndRegister(mtx, cut = 1.0):
     return mtx[:,cols], ats[cols]
 
 #prunes columns corresponding to gaps in the first sequence. Returns a numpy array
-def prunePrimaryGaps(mtx):
+def prunePrimaryGaps(mtx, **kw):
+    cutoff = kw.get('cutoff', None)
     cols = np.nonzero(mtx[0] - 20)[0]
-    return mtx[:,cols]
+    mtxP = mtx[:,cols]
+    M,L  = np.shape(mtxP)
+    ats  = np.arange(L, dtype=int) + 1
+    if cutoff is not None:
+        H = Entropy(mtxP)
+        cols =  np.where(H > cutoff)[0]
+        mtxP = mtxP[:,cols]
+        ats  = ats[cols]
+    return ats,mtxP
 
 # returns columns which have a mode with frequence < cut (90% by default) 
 # and are not dominated by '-' modes.
