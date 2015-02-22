@@ -1,3 +1,4 @@
+from scipy.optimize import minimize
 import pinfwrapper,fullmsa
 import numpy as np
 import cvxpy as cvx
@@ -191,13 +192,25 @@ def split_inf(mtx, A=0.01):
     I = pinfwrapper.Inf(mtx)
     F = cvx.Variable(L,L)
     B = cvx.Variable(L,L)
+    e = cvx.Variable(L,L)
     constraints = [B > 0., F >=0.]
     
     
     p = cvx.Problem(cvx.Minimize(
-        (1./L/L)*cvx.sum_squares(I-F-B) +
+        (1./L/L)*cvx.sum_squares(I-F-B-e) +
         #cvx.sum_squares((1./L/L)*(cvx.sum_entries(B)) - B) +
         (1./L/L)*cvx.norm2(B) +
+        (1./L/L)*cvx.norm2(e) +
         A*(1./L/L)*cvx.norm1(F-B)
         ), constraints)
     return p
+
+def weighted_entropy(weights, mtx):
+    mtx = mtx.copy()
+    #weights = 1. + abs(weights.copy())
+    return np.sum(pinfwrapper.Entropy(mtx, weights=weights))
+
+def min_entropy(mtx):
+    M,L = np.shape(mtx)
+    return minimize(weighted_entropy, np.ones(M), (mtx,))
+

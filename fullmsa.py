@@ -403,7 +403,8 @@ def Entropy(mtx, **kw):
     M, L = np.shape(mtx)
     H = np.zeros(L)
     for l in range(L):
-        P = np.bincount(mtx[:,l], None, 21)[:MPDSize]/float(M)
+        P = np.bincount(mtx[:,l], None, 21)
+        P = P[:MPDSize]/float(np.sum(P[:MPDSize]))
         for i in np.where(P > 0.)[0]:
             H[l] += -P[i]*np.log2(P[i])
     return H
