@@ -214,3 +214,10 @@ def max_entropy(mtx):
     M,L = np.shape(mtx)
     return minimize(weighted_entropy, np.ones(M), (mtx,))
 
+def cvx_max_entropy(mtx):
+    M,L = np.shape(mtx)
+    masks  = [cvx.Constant(mtx==i) for i in range(mtx.min(), mtx.max()+1)]
+    weights= cvx.Variable(M)
+    constraints=[cvx.sum_entries(weights)==1.]
+    p = cvx.Problem(cvx.Maximize(sum([cvx.sum_entries(cvx.entr(weights.T*i)) for i in masks])), constraints)
+    return p
