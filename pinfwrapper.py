@@ -345,3 +345,18 @@ def MINT(mtx, **kwargs):
     An LxL numpy array of floats where L is np.shape(mtx)[1]
     """
     I = Inf(mtx, nogaps=kwargs.get('nogaps', True))
+
+# Shannon entropy
+def Entropy(mtx, **kw):
+    nogaps = kw.get('nogaps', False)
+    MPDSize= 21
+    if nogaps:
+        MPDSize = 20
+    M, L = np.shape(mtx)
+    weights= kw.get('weights', np.ones(M))
+    H = np.zeros(L)
+    for l in range(L):
+		P = np.histogram(mtx[:,l], MPDSize, (-0.1, MPDSize-0.9), True, weights)[0]
+		H[l] = -np.sum(P[P > 0.]*np.log2(P[P> 0.]))
+    return H
+
