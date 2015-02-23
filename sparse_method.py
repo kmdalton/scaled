@@ -208,9 +208,9 @@ def split_inf(mtx, A=0.01):
 def weighted_entropy(weights, mtx):
     mtx = mtx.copy()
     #weights = 1. + abs(weights.copy())
-    return np.sum(pinfwrapper.Entropy(mtx, weights=weights))
+    return np.sum(-pinfwrapper.Entropy(mtx, weights=weights))
 
-def min_entropy(mtx):
+def max_entropy(mtx):
     M,L = np.shape(mtx)
     return minimize(weighted_entropy, np.ones(M), (mtx,))
 
