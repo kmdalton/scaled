@@ -214,9 +214,30 @@ def max_entropy(mtx):
     M,L = np.shape(mtx)
     return minimize(weighted_entropy, np.ones(M), (mtx,))
 
-def cvx_max_entropy(mtx):
+
+def weighted_joint_entropy(weights, mtx):
+    mtx = mtx.copy()
+    weights=weights.copy()
+    return -np.sum(pinfwrapper.JointH(mtx, weights=weights))
+
+def max_joint_entropy(mtx):
+    M,L = np.shape(mtx)
+    return minimize(weighted_joint_entropy, np.ones(M), (mtx,))
+
+def cvx_max_entropy(mtx, **kw):
+    nogaps = kw.get('nogaps', False)
     M,L = np.shape(mtx)
     masks  = [cvx.Constant(mtx==i) for i in range(mtx.min(), mtx.max()+1)]
+    if nogaps is True:
+        masks = masks[:-1]
+    weights= cvx.Variable(M)
+    constraints=[weights >= 0., cvx.sum_entries(weights) == 1.]
+    p = cvx.Problem(cvx.Maximize(sum([cvx.sum_entries(cvx.entr(weights.T*i)) for i in masks])), constraints)
+    return p
+
+def columnwise_max_entropy(vec):
+    M = len(vec)
+    masks  = [cvx.Constant(vec==i) for i in range(vec.min(), vec.max()+1)]
     weights= cvx.Variable(M)
     constraints=[weights >= 0., cvx.sum_entries(weights) == 1.]
     p = cvx.Problem(cvx.Maximize(sum([cvx.sum_entries(cvx.entr(weights.T*i)) for i in masks])), constraints)
