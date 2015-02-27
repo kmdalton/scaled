@@ -221,3 +221,16 @@ def cvx_max_entropy(mtx):
     constraints=[weights >= 0., cvx.sum_entries(weights) == 1.]
     p = cvx.Problem(cvx.Maximize(sum([cvx.sum_entries(cvx.entr(weights.T*i)) for i in masks])), constraints)
     return p
+
+def max_joint_entropy(mtx):
+    M,L = np.shape(mtx)
+    W = cvx.Variable(M)
+    Wstack = cvx.hstack(*(W for i in range(L)))
+    masks  = [cvx.Constant(mtx==i) for i in range(mtx.min(), mtx.max()+1)]
+    I = cvx.Variable(1)
+    for mask1 in masks:
+        for mask2 in masks:
+            I += cvx.sum_entries(cvx.entr(cvx.mul_elemwise(mask1, Wstack).T*mask2))
+    constraints=[W >= 0., cvx.sum_entries(W) == 1.]
+    p = cvx.Problem(cvx.Maximize(I), constraints)
+    return p
