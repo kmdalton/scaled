@@ -268,3 +268,19 @@ def max_joint_entropy(mtx):
     ), constraints)
     return p 
 
+
+def pairwise_max_joint(vec1, vec2):
+    M = len(vec1)
+    K = max(max(vec1), max(vec2)) + 1
+    W = cvx.Variable(M)
+
+    bivariate_mapper = np.arange(K*K).reshape((K,K))
+    pairwise_vector = bivariate_mapper[vec1, vec2]
+    masks = cvx.hstack(*(cvx.Constant(pairwise_vector==i) for i in np.nonzero(np.bincount(pairwise_vector))[0]))
+    constraints=[W >= 0., cvx.sum_entries(W) == 1.]
+    p = cvx.Problem(cvx.Maximize(
+        cvx.sum_entries(cvx.entr(W.T*masks))
+    ), constraints)
+    p.solve()
+    return p.value
+
