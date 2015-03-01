@@ -261,12 +261,10 @@ def max_joint_entropy(mtx):
     idx1 = np.concatenate(idx1)
     idx2 = np.concatenate(idx2)
     val  = np.concatenate(val)
-
-    print len(idx1),len(idx2),len(val)
     P = spmatrix(val, idx1, idx2)
-
-    I = sum([cvx.entr(W.T*P[:,i]) for i in range(P.size[1])])
     constraints=[W >= 0., cvx.sum_entries(W) == 1.]
-    p = cvx.Problem(cvx.Maximize(I), constraints)
+    p = cvx.Problem(cvx.Maximize(
+        cvx.sum_entries(cvx.entr(W.T*P))
+    ), constraints)
     return p 
 
