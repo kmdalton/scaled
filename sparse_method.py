@@ -1,4 +1,5 @@
 from scipy.optimize import minimize
+from cvxopt import spmatrix
 import pinfwrapper,fullmsa
 import numpy as np
 import cvxpy as cvx
@@ -245,13 +246,27 @@ def columnwise_max_entropy(vec):
 
 def max_joint_entropy(mtx):
     M,L = np.shape(mtx)
+    K = mtx.max() + 1
     W = cvx.Variable(M)
-    Wstack = cvx.hstack(*(W for i in range(L)))
-    masks  = [cvx.Constant(mtx==i) for i in range(mtx.min(), mtx.max()+1)]
-    I = cvx.Variable(1)
-    for mask1 in masks:
-        for mask2 in masks:
-            I += cvx.sum_entries(cvx.entr(cvx.mul_elemwise(mask1, Wstack).T*mask2))
+    bivariate_mapper = np.arange(K*K).reshape((K,K))
+    idx1,idx2 = np.indices((L,L))
+    idx1,idx2 = idx1.flatten(),idx2.flatten()
+    pairwise_mtx = bivariate_mapper[mtx[:,idx1.flatten()],mtx[:,idx2.flatten()]]
+    idx1,idx2,val = [],[],[]
+    for i,r in enumerate(np.nonzero(np.bincount(pairwise_mtx.flatten()))[0]):
+        t1,t2 = np.where(pairwise_mtx == r)
+        idx1.append(t1)
+        idx2.append(t2 + i*L*L)
+        val.append(np.ones(len(t1))*r)
+    idx1 = np.concatenate(idx1)
+    idx2 = np.concatenate(idx2)
+    val  = np.concatenate(val)
+
+    print len(idx1),len(idx2),len(val)
+    P = spmatrix(val, idx1, idx2)
+
+    I = sum([cvx.entr(W.T*P[:,i]) for i in range(P.size[1])])
     constraints=[W >= 0., cvx.sum_entries(W) == 1.]
     p = cvx.Problem(cvx.Maximize(I), constraints)
-    return p
+    return p 
+
