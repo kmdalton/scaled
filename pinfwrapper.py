@@ -352,11 +352,16 @@ def Entropy(mtx, **kw):
     MPDSize= 21
     if nogaps:
         MPDSize = 20
-    M, L = np.shape(mtx)
+    M = np.shape(mtx)[0]
+    L = 1 if len(np.shape(mtx)) == 1 else np.shape(mtx)[1]
     weights= kw.get('weights', np.ones(M))
+    weights= np.array(weights, dtype=float)
     H = np.zeros(L)
-    for l in range(L):
-		P = np.histogram(mtx[:,l], MPDSize, (-0.1, MPDSize-0.9), True, weights)[0]
-		H[l] = -np.sum(P[P > 0.]*np.log2(P[P> 0.]))
+    if L == 1:
+		P = np.histogram(mtx, MPDSize, (-0.1, MPDSize-0.9), weights=weights)[0]/np.sum(weights)
+		H = -np.sum(P[P > 0.]*np.log2(P[P> 0.]))
+    else:
+        for l in range(L):
+            P = np.histogram(mtx[:,l], MPDSize, (-0.1, MPDSize-0.9), weights=weights)[0]/np.sum(weights)
+            H[l] = -np.sum(P[P > 0.]*np.log2(P[P> 0.]))
     return H
-
