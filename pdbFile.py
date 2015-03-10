@@ -1,26 +1,46 @@
 import numpy as np
 
 changeToOneLetter={
-'GLY':'G',
-'ALA':'A',
-'SER':'S',
-'CYS':'C',
-'VAL':'V',
-'THR':'T',
-'PRO':'P',
-'ILE':'I',
-'LEU':'L',
-'ASP':'D',
-'ASN':'N',
-'GLU':'E',
-'GLN':'Q',
-'MET':'M',
-'LYS':'K',
-'HIS':'H',
-'PHE':'F',
-'TYR':'Y',
-'ARG':'R',
-'TRP':'W'
+    'GLY':'G',
+    'ALA':'A',
+    'SER':'S',
+    'CYS':'C',
+    'VAL':'V',
+    'THR':'T',
+    'PRO':'P',
+    'ILE':'I',
+    'LEU':'L',
+    'ASP':'D',
+    'ASN':'N',
+    'GLU':'E',
+    'GLN':'Q',
+    'MET':'M',
+    'LYS':'K',
+    'HIS':'H',
+    'PHE':'F',
+    'TYR':'Y',
+    'ARG':'R',
+    'TRP':'W',
+    'G':'GLY',
+    'A':'ALA',
+    'S':'SER',
+    'C':'CYS',
+    'V':'VAL',
+    'T':'THR',
+    'P':'PRO',
+    'I':'ILE',
+    'L':'LEU',
+    'D':'ASP',
+    'N':'ASN',
+    'E':'GLU',
+    'Q':'GLN',
+    'M':'MET',
+    'K':'LYS',
+    'H':'HIS',
+    'F':'PHE',
+    'Y':'TYR',
+    'R':'ARG',
+    'W':'TRP',
 }
 
 #Maps amino acid names onto ints for the alignment matrix
@@ -66,7 +86,7 @@ aaMapping = {
     '17':'V',
     '18':'W',
     '19':'Y',
-    '20':'-'
+    '20':'-',
 }
 
 # ATOM object uses a PDB file line for construction
@@ -104,26 +124,40 @@ class pdbDB():
         self.pdbFN = pdbFN
         lines = open(pdbFN).readlines()
         self.lines = lines
-        lines = [line for line in lines if line[:4] == 'ATOM']
-        for line in lines:
-            self.addAtom(line)
+        self.atoms = [atom(line) for line in lines if line[:4] == 'ATOM']
+        self.atoms = sorted(self.atoms, key = lambda x: (x['CHAIN'], x['RESNUM'], x['ATOMTYPE']))
+        self.build_chains()
 
-    def addAtom(self, line):
-        newAtom = atom(line)
-        chainID = newAtom['CHAIN']
-        resNum = newAtom['RESNUM']
-        atomType = newAtom['ATOMTYPE']
-        if chainID not in self.chains:
-            self.chains[chainID] = {}
-            self.alphas[chainID] = {}
-        if str(resNum) not in self.chains[chainID]:
-            self.chains[chainID][str(resNum)] = {}
-        self.chains[chainID][str(resNum)]['ATOMTYPE'] = newAtom
-        if atomType == 'CA':
-            self.alphas[chainID][str(resNum)] = newAtom
-            
-    def calphaDistMat(self, chainID):
-        return distMat(self.alphas[chainID])
+    def build_chains(self):
+        for atom in self:
+            chainID = atom['CHAIN']
+            resnum  = atom['RESNUM']
+            atomtype= atom['ATOMTYPE']
+            if chainID not in self.chains:
+                self.chains[chainID] = {}
+            if resnum not in self.chains[chainID]:
+                self.chains[chainID][resnum] = {}
+            self.chains[chainID][resnum][atomtype] = atom
+
+    def get_chain_seqs(self):
+        seqs = {}
+        for chain in self.chains:
+            seqs[chain] = ''.join([changeToOneLetter[self.chains[chain][i].values()[0]['RESTYPE']] for i in self.chains[chain]])
+        return seqs
+
+    def get_calpha_dist_mat(self):
+        dist = {key: {} for key in self.chains}
+        for chain1 in self.chains:
+            for chain2 in self.chains:
+                atoms1 = [v['CA'] for v in self.chains[chain1].values()]
+                atoms2 = [v['CA'] for v in self.chains[chain2].values()]
+                dist[chain1][chain2] = distMat(atoms1, atoms2)
+        return dist
+
+    def __iter__(self):
+        for atom in self.atoms:
+            yield atom
+
 
 # returns list of atom objects
 def atoms(pdbFN):
@@ -138,26 +172,24 @@ def dist(atom1, atom2):
     return D
 
 # returns distance matrix between all atoms in pdb file
-def distMat(pdbFN, chainID):
-    a = atoms(pdbFN)
-    a = [i for i in a if i['CHAIN'] == chainID and i['ATOMTYPE'] == 'CA']
-    l = len(a)
-    x = np.ones([l,l])*np.array([i['XYZ'][0] for i in a])
-    y = np.ones([l,l])*np.array([i['XYZ'][1] for i in a])
-    z = np.ones([l,l])*np.array([i['XYZ'][2] for i in a])
-    D = np.sqrt((x-x.T)*(x-x.T)+(y-y.T)*(y-y.T)+(z-z.T)*(z-z.T))
+def distMat(atoms1, atoms2):
+    l1,l2 = len(atoms1),len(atoms2)
+    x1 = np.ones([l2,l1])*np.array([i['XYZ'][0] for i in atoms1])
+    y1 = np.ones([l2,l1])*np.array([i['XYZ'][1] for i in atoms1])
+    z1 = np.ones([l2,l1])*np.array([i['XYZ'][2] for i in atoms1])
+    x2 = np.ones([l1,l2])*np.array([i['XYZ'][0] for i in atoms2])
+    y2 = np.ones([l1,l2])*np.array([i['XYZ'][1] for i in atoms2])
+    z2 = np.ones([l1,l2])*np.array([i['XYZ'][2] for i in atoms2])
+    D = np.sqrt((x1-x2.T)*(x1-x2.T)+(y1-y2.T)*(y1-y2.T)+(z1-z2.T)*(z1-z2.T))
     return D
 
-# copy of previous function, but also returns resNums
-def distMat(pdbFN, chainID):
-    a = atoms(pdbFN)
-    a = [i for i in a if i['CHAIN'] == chainID and i['ATOMTYPE'] == 'CA']
-    l = len(a)
-    x = np.ones([l,l])*np.array([i['XYZ'][0] for i in a])
-    y = np.ones([l,l])*np.array([i['XYZ'][1] for i in a])
-    z = np.ones([l,l])*np.array([i['XYZ'][2] for i in a])
-    D = np.sqrt((x-x.T)*(x-x.T)+(y-y.T)*(y-y.T)+(z-z.T)*(z-z.T))
-    resNums = [i['RESNUM'] for i in a]
-    resNums = np.array(sorted(resNums))
-    return D, resNums
-
+#Returns indices for shared residue numbers
+def get_shared_resnum_indices(resnums1, resnums2):
+    indices1 = []
+    indices2 = []
+    for i,v1 in enumerate(resnums1):
+        for j,v2 in enumerate(resnums2):
+            if v1 == v2:
+                indices1.append(i)
+                indices2.append(j)
+    return indices1, indices2
