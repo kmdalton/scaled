@@ -1,8 +1,10 @@
 from scipy.optimize import minimize
+import multiprocessing as mp
 from cvxopt import spmatrix
 import pinfwrapper,fullmsa
 import numpy as np
 import cvxpy as cvx
+from cvxopt import spmatrix
 
 def l1_least_squares(J, **kw): 
     #Empirical parameters
@@ -244,6 +246,34 @@ def columnwise_max_entropy(vec):
     p = cvx.Problem(cvx.Maximize(sum([cvx.sum_entries(cvx.entr(weights.T*i)) for i in masks])), constraints)
     return p
 
+def columnwise_max_entropy_regularized(vec, alpha=0., rho=0.):
+    M = len(vec)
+    L = 1.
+    if vec.ndim > 1:
+        L = vec.shape[1]
+        masks  = cvx.Constant(np.hstack(vec==i for i in range(vec.min(), vec.max()+1)))
+    else:
+        masks  = cvx.Constant(np.vstack(vec==i for i in range(vec.min(), vec.max()+1))).T
+    weights= cvx.Variable(M)
+    constraints=[weights >= 0., cvx.sum_entries(weights) == 1.]
+    p = cvx.Problem(cvx.Maximize(cvx.sum_entries(cvx.entr(weights.T*masks))/L - alpha*cvx.norm1(weights)/float(L) - rho*cvx.norm2(weights)/float(L)), constraints)
+    return p
+
+def columnwise_max_joint_entropy(mtx, index):
+    V = mtx[:,index]
+    M,L = np.shape(mtx)
+    K = mtx.max() + 1
+    bivariate_mapper = np.arange(K**2).reshape((K,K))
+    mtx = np.vstack(bivariate_mapper[V,i] for i in mtx.T).T
+    masks  = np.array(np.hstack(mtx==i for i in np.nonzero(np.bincount(mtx.flatten()))[0]), dtype=float)
+    #idx1,idx2 = np.where(masks > 0.)
+    #masks = spmatrix(masks[idx1, idx2], idx1, idx2)
+    masks = cvx.Constant(masks)
+    weights= cvx.Variable(M)
+    constraints=[weights >= 0., cvx.sum_entries(weights) == 1.]
+    p = cvx.Problem(cvx.Maximize(cvx.sum_entries(cvx.entr(weights.T*masks))), constraints)
+    return p
+
 def max_joint_entropy(mtx):
     M,L = np.shape(mtx)
     K = mtx.max() + 1
@@ -284,3 +314,47 @@ def pairwise_max_joint(vec1, vec2):
     p.solve()
     return p.value
 
+import rpy2.robjects as robj
+from rpy2.robjects.packages import importr
+import rpy2.robjects.packages as rpackages
+
+def dpglasso(sigma, rho):
+    glasso = importr('dpglasso')
+    nr, nc = sigma.shape
+    sigmavec = robj.FloatVector(sigma.transpose().reshape((sigma.size)))
+    sigmar = robj.r.matrix(sigmavec, nrow=nr, ncol=nc)
+    return glasso.dpglasso(sigmar, rho=rho)
+
+def _weight_helper(a):
+    p = cvx_max_entropy(a)
+    p.solve(solver='SCS')
+    return np.array(p.variables()[0].value).flatten()
+
+def _mutinf_helper(a):
+    return pinfwrapper.infoDistance(a[0], weights=a[1])[0,1]
+
+def parallel_pairwise_maxent(mtx, numprocs=None):
+    if numprocs is None:
+        numprocs = mp.cpu_count()
+    M,L = np.shape(mtx)
+
+    A  = [mtx[:,i] for i in zip(*np.triu_indices(L, 1))]
+    p = mp.Pool(numprocs)
+
+    uW = p.map(_weight_helper, A)
+    print '1'
+    uC = [_mutinf_helper(i) for i in zip(A, uW)]
+
+    print '2'
+    C  = np.zeros((L,L))
+    C[np.triu_indices(L, 1)] = uC
+    C = C+C.T
+
+    print '3'
+    W  = np.zeros((L,L,M))
+    W[np.triu_indices(L, 1)] = uW
+    print '4'
+    W = W + W.transpose((1,0,2))
+    print '5'
+    
+    return W,C
