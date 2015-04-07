@@ -36,27 +36,27 @@ aaMapping = {
     'W': 18,
     'Y': 19,
     '-': 20,
-    '0' :'A',
-    '1' :'C',
-    '2' :'D',
-    '3' :'E',
-    '4' :'F',
-    '5' :'G',
-    '6' :'H',
-    '7' :'I',
-    '8' :'K',
-    '9' :'L',
-    '10':'M',
-    '11':'N',
-    '12':'P',
-    '13':'Q',
-    '14':'R',
-    '15':'S',
-    '16':'T',
-    '17':'V',
-    '18':'W',
-    '19':'Y',
-    '20':'-'
+    0 :'A',
+    1 :'C',
+    2 :'D',
+    3 :'E',
+    4 :'F',
+    5 :'G',
+    6 :'H',
+    7 :'I',
+    8 :'K',
+    9 :'L',
+    10:'M',
+    11:'N',
+    12:'P',
+    13:'Q',
+    14:'R',
+    15:'S',
+    16:'T',
+    17:'V',
+    18:'W',
+    19:'Y',
+    20:'-'
 }
 
 #ordMapping is a faster hash for constructing the alignment matrix
@@ -622,3 +622,22 @@ def topx(mtx, numpairs):
     IND = np.argsort(mtx.flatten())[-numpairs:]
     X,Y = X[IND],Y[IND]
     return X,Y
+
+def rank_order_mat(mtx):
+    M,L = np.shape(mtx)
+    new_mat = np.zeros((M,L),dtype=int)
+    for i in range(L):
+        mapper = np.zeros(mtx.max()+1)
+        mapper[np.argsort(np.bincount(mtx[:,i]))[::-1]] = np.arange(mtx[:,i].max()+1)
+        new_mat[:,i] = mapper[mtx[:,i]]
+    return new_mat
+
+def mat_mul_metric(mtx, **kw):
+    M,L = np.shape(mtx)
+    W = kw.get('weights', np.ones(M))
+    C = np.zeros((mtx.max()+1, L, L))
+    for i in range(mtx.max() + 1):
+        A = np.matrix(mtx==i, dtype=float)
+        A = np.matrix(W*np.asarray(A).T).T
+        C[i] = A.T*A
+    return C
