@@ -3,7 +3,7 @@ import numpy as np
 import cvxpy as cvx
 
 def max_entropy(mtx, **kw):
-    M,L = np.shape(mtx)
+    M = np.shape(mtx)
     masks = cvx.hstack(*(cvx.Constant(mtx==i) for i in range(mtx.max()+1)))
     weights= cvx.Variable(M)
     constraints=[weights >= 0., cvx.sum_entries(weights) == 1.]
@@ -11,7 +11,7 @@ def max_entropy(mtx, **kw):
     return p
 
 def l2_max_entropy(mtx, **kw):
-    M,L = np.shape(mtx)
+    M = np.shape(mtx)
     rho   = kw.get('rho', float(M))
     masks = cvx.hstack(*(cvx.Constant(mtx==i) for i in range(mtx.max()+1)))
     weights= cvx.Variable(M)
