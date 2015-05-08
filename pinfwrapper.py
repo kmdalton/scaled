@@ -365,3 +365,18 @@ def Entropy(mtx, **kw):
             P = np.histogram(mtx[:,l], MPDSize, (-0.1, MPDSize-0.9), weights=weights)[0]/np.sum(weights)
             H[l] = -np.sum(P[P > 0.]*np.log2(P[P> 0.]))
     return H
+
+def NullEntropy(mtx, **kw):
+    nogaps = kw.get('nogaps', False)
+    MPDSize= 21
+    if nogaps:
+        MPDSize = 20
+    M,L = np.shape(mtx)
+    weights= kw.get('weights', np.ones(M))
+    weights= np.array(weights, dtype=float)
+    H = np.zeros(L)
+    P = np.array([np.histogram(i, MPDSize, (-0.1, MPDSize-0.9), weights=weights)[0]/np.sum(weights) for i in mtx.T])
+    P = P.T*P[:,:,None]
+    P[P>0.] = P[P>0.]*np.log2(P[P>0.])
+    H = -np.sum(P,axis=1)
+    return H
