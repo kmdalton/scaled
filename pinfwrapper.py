@@ -375,8 +375,9 @@ def NullEntropy(mtx, **kw):
     weights= kw.get('weights', np.ones(M))
     weights= np.array(weights, dtype=float)
     H = np.zeros(L)
-    P = np.array([np.histogram(i, MPDSize, (-0.1, MPDSize-0.9), weights=weights)[0]/np.sum(weights) for i in mtx.T])
-    P = P.T*P[:,:,None]
+    P = np.array([np.histogram(i, MPDSize, (-0.1, MPDSize-0.9), weights=weights)[0]*np.ones((MPDSize, MPDSize))/np.sum(weights) for i in mtx.T])
+    T = np.array([i.T for i in P])
+    P = P.T*T[:,:,:,None]
     P[P>0.] = P[P>0.]*np.log2(P[P>0.])
-    H = -np.sum(P,axis=1)
+    H = -np.sum(np.sum(P,axis=1), axis=1)
     return H
