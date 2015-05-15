@@ -64,5 +64,5 @@ rpy2.robjects.numpy2ri.activate()
 
 def glasso(cov, rho):
     dpglasso = importr('dpglasso')
-    return dpglasso.dpglasso(cov, rho=rho)[2]
+    return np.array(dpglasso.dpglasso(cov, rho=rho)[2])
 
