@@ -57,3 +57,12 @@ def sparse_sqrt(C, R, **kw):
     return p
 
 
+from rpy2 import robjects
+import rpy2.robjects.numpy2ri
+from rpy2.robjects.packages import importr
+rpy2.robjects.numpy2ri.activate()
+
+def glasso(cov, rho):
+    dpglasso = importr('dpglasso')
+    return dpglasso.dpglasso(cov, rho=rho)[2]
+
