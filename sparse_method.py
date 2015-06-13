@@ -85,10 +85,14 @@ def MPD(mtx):
 
 def MER(mtx, **kw):
     delta = kw.get('delta', 0.01)
+    cutoff= kw.get('thresholdnmi', 0.2)
     k = mtx.max() + 1
     M,L = np.shape(mtx)
     JPD = jpd(mtx)
-    X,Y = np.triu_indices(L, 1)
+    #X,Y = np.triu_indices(L, 1)
+    C = 1. - pinfwrapper.infoDistance(mtx)
+    C[np.tril_indices(L)] = 0.
+    X,Y = np.where(C>cutoff)
     JPD = [i[i > 0.] for i in JPD[:,X,Y].T]
     print np.shape(JPD)
     print np.shape(JPD[0])
