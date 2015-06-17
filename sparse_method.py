@@ -106,3 +106,47 @@ def MER(mtx, **kw):
     print type(H)
     print [type(i) for i in constraints[:10]]
     return cvx.Problem(cvx.Maximize(H), constraints)
+
+def joint_counts_matrix(mtx, **kw):
+    M,L = np.shape(mtx)
+    k = mtx.max()+1
+    bivariate_mapper = np.arange(k*k).reshape((k,k))
+    j = bivariate_mapper[mtx[:,:,None], mtx[:,None,:]]
+    idx1,idx2 = np.triu_indices(L, 1)
+    j = j[:,idx1,idx2]
+    #return j
+    M,L = np.shape(j)
+    X,Y = np.array([], dtype=int),np.array([], dtype=int)
+    offset = 0
+    for i in [i for i in range(k**2) if i in j]:
+        A,B = np.where(j[:,np.sum(j == i, axis=0) > 0.] == i)
+        X,Y = np.append(X, A),np.append(Y, B + offset)
+        offset = offset + B.max()
+    return scipy.sparse.csr_matrix(scipy.sparse.coo_matrix((np.ones(len(X)), (X,Y))))
+
+from scipy.optimize import minimize
+
+def coordinate_descent(f, g, **kw):
+    tolerance   = kw.get('tolerance', 0.1)
+    macrocycles = kw.get('macrocycles', 100)
+    w = g.copy()
+    converged = False
+
+    for i in range(macrocycles):
+        print "Entering macrocyle {}".format(i)
+        old_weights = w.copy()
+        for j in range(len(g)):
+            print "Optimizing sequence {}".format(j+1)
+            def v(x):
+                w[j] = x
+                return f(w)
+            w[j] = minimize(v, [w[i]], bounds=[(0,None)])['x']
+            w = w/np.sum(w)
+        if np.sum(np.abs(old_weights - w)) < tolerance:
+            converged = True
+            break
+
+    print "Converged: {}".format(converged)
+    return w
+
+
