@@ -150,3 +150,20 @@ def coordinate_descent(f, g, **kw):
     return w
 
 
+def linked_error(mtx, **kw):
+    J = jpd(mtx)
+    k,L,L = np.shape(J)
+    k = int(np.sqrt(k))
+    C = []
+    O = cvx.Constant(np.ones(k))
+    H = 0.
+    for j in J[:, np.triu_indices(L, 1)[0], np.triu_indices(L,1)[1]].T:
+        j = cvx.Constant(j.reshape((k,k)))
+        v = cvx.Variable(k,k)
+        C.append(O.T*j == O.T*v)
+        C.append(O.T*j.T == O.T*v.T)
+        H += cvx.sum_entries(cvx.entr(v)) 
+    p = cvx.Problem(cvx.Maximize(H), C)
+    return p
+
+
