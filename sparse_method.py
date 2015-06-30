@@ -7,10 +7,10 @@ def jpd(mtx):
     M,L = np.shape(mtx)
     k = mtx.max()+1
     bivariate_mapper = np.arange(k*k).reshape((k,k))
-    j = bivariate_mapper[mtx[:,:,None], mtx[:,None,:]]
-    j = j.reshape(M, L**2)
-    j = np.vstack([np.bincount(i, minlength=k**2)/float(M) for i in j.T])
-    return j.reshape((k**2, L, L))
+    j = bivariate_mapper[mtx[:,:,None], mtx[:,None,:]].swapaxes(0,2).swapaxes(0,1)
+    func1d = lambda x: np.bincount(x, None, k**2)
+    j = np.apply_along_axis(func1d, 2, j)
+    return j/float(M)
 
 
 def max_entropy(mtx, **kw):
@@ -166,4 +166,54 @@ def linked_error(mtx, **kw):
     p = cvx.Problem(cvx.Maximize(H), C)
     return p
 
+def max_joint_dkl(j, **kw):
+    j = compress_jpd(j)
+    k,l = np.shape(j)
+    j = cvx.Constant(j)
+    alpha = kw.get('alpha', 1.)
+    v = cvx.Variable(k,l)
+    Ok = cvx.Constant(np.ones(k))
+    Ol = cvx.Constant(np.ones(l))
+    constraints = [Ok.T*v == Ok.T*j, Ol.T*v.T == Ol.T*j.T]
+    D = 0
+    for x in range(k):
+        for y in range(l):
+            D += cvx.kl_div(j[x,y], v[x,y])
+    H = cvx.sum_entries(cvx.entr(v))
+    p = cvx.Problem(cvx.Maximize(H-alpha*D), constraints)
+    return p
 
+
+def max_joint(j, **kw):
+    k,l = np.shape(j)
+    j = cvx.Constant(j)
+    v = cvx.Variable(k,l)
+    Ok = cvx.Constant(np.ones(k))
+    Ol = cvx.Constant(np.ones(l))
+    constraints = [Ok.T*v == Ok.T*j, Ol.T*v.T == Ol.T*j.T]
+    H = cvx.sum_entries(cvx.entr(v))
+    p = cvx.Problem(cvx.Maximize(H), constraints)
+    return p
+
+def entropy(p):
+    p = p*np.log2(p)
+    p[np.isnan(p)] = 0.
+    return -np.sum(p)
+
+def mi(j):
+    Hx = entropy(np.sum(j, axis=0))
+    Hy = entropy(np.sum(j, axis=1))
+    Hxy= entropy(j.flatten())
+    return Hx + Hy - Hxy
+
+def nmi(j):
+    Hx = entropy(np.sum(j, axis=0))
+    Hy = entropy(np.sum(j, axis=1))
+    Hxy= entropy(j.flatten())
+    return (Hx + Hy - Hxy)/Hxy
+    M,L = np.shape(mtx)
+    M,L = np.shape(mtx)
+
+def compress_jpd(j):
+    j = j[:,np.sum(j, 0) > 0.][np.sum(j,1) >0.,:]
+    return j
