@@ -8,7 +8,7 @@ def jpd(mtx):
     k = mtx.max()+1
     bivariate_mapper = np.arange(k*k).reshape((k,k))
     j = bivariate_mapper[mtx[:,:,None], mtx[:,None,:]].swapaxes(0,2).swapaxes(0,1)
-    func1d = lambda x: np.bincount(x, None, k**2)
+    func1d = lambda x: np.bincount(x, None, k**2) #This is a helper, just chill out
     j = np.apply_along_axis(func1d, 2, j)
     return j/float(M)
 
@@ -217,3 +217,60 @@ def nmi(j):
 def compress_jpd(j):
     j = j[:,np.sum(j, 0) > 0.][np.sum(j,1) >0.,:]
     return j
+
+"""
+def min_chi2(j, **kw):
+    alpha = kw.get('alpha', 1.)
+    k,l = np.shape(j)
+    Mk = np.sum(j, 1)
+    Ml = np.sum(j, 0)
+    e = cvx.Constant(np.matrix(Mk).T*np.matrix(Ml))
+    print np.shape(e)
+    v = cvx.Variable(k,l)
+
+    j = cvx.Constant(j)
+    ek,el = cvx.Constant(np.ones(k)), cvx.Constant(np.ones(l))
+    constraints = [ek.T*v == ek.T*j, el.T*v.T == el.T*j.T]
+    p = cvx.Problem(cvx.Minimize(cvx.sum_squares(v - e) + alpha*(cvx.sum_squares(v - j))), constraints)
+    return p
+
+"""
+
+def expected(mtx):
+    M = MPD(mtx).flatten()
+    return np.matrix(M).T*np.matrix(M)
+
+def observed(mtx):
+    M,L = np.shape(mtx)
+    k = mtx.max() + 1
+    O = jpd(mtx)
+    return O.reshape((L,L,k,k)).swapaxes(1,2).reshape((L*k, L*k))
+
+def min_chi2(mtx, **kw):
+    alpha = kw.get('alpha', 1.)
+    M,L = np.shape(mtx)
+    k = mtx.max() + 1
+
+    #Set up the system variables
+    M = MPD(mtx).flatten()
+    E = np.matrix(M).T*np.matrix(M)
+    O = jpd(mtx)
+    O = O.reshape((L,L,k,k)).swapaxes(1,2).reshape((L*k, L*k))
+
+    #CVXify everything
+    M = cvx.Constant(M)
+    E = cvx.Constant(E)
+    O = cvx.Constant(O)
+    e = cvx.Constant(np.ones(k))
+    V = cvx.Variable(k*L, k*L)
+    print V.shape
+
+    constraints = []
+    #Complicated constraints
+    for i in range(L):
+        start,end = i*k,(i+1)*k
+        constraints.append(e.T*V[start:end,:] == M.T)
+        constraints.append(e.T*V[:,start:end].T == M.T)
+    
+    p = cvx.Problem(cvx.Minimize(cvx.sum_squares(V - E) + alpha*(cvx.sum_squares(V - O))), constraints)
+    return p
