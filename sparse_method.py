@@ -3,15 +3,21 @@ import scipy.linalg
 import numpy as np
 import cvxpy as cvx
 
-def jpd(mtx):
+def jpd(mtx, **kw):
     M,L = np.shape(mtx)
     k = mtx.max()+1
     bivariate_mapper = np.arange(k*k).reshape((k,k))
     j = bivariate_mapper[mtx[:,:,None], mtx[:,None,:]].swapaxes(0,2).swapaxes(0,1)
-    func1d = lambda x: np.bincount(x, None, k**2) #This is a helper, just chill out
+    func1d = lambda x: np.bincount(x, kw.get('weights', None), k**2) #This is a helper, just chill out
     j = np.apply_along_axis(func1d, 2, j)
     return j/float(M)
 
+def mpd(mtx, **kw):
+    M,L = np.shape(mtx)
+    k = mtx.max()+1
+    func1d = lambda x: np.bincount(x, kw.get('weights', None), k) #This is a helper, just chill out
+    mtx = np.apply_along_axis(func1d, 0, mtx)
+    return mtx.T/float(M)
 
 def max_entropy(mtx, **kw):
     M = np.shape(mtx)[0]
@@ -68,20 +74,14 @@ def sparse_sqrt(C, R, **kw):
     return p
 
 
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
-from rpy2.robjects.packages import importr
-rpy2.robjects.numpy2ri.activate()
-
-def glasso(cov, rho, glasso_kwargs = None):
-    dpglasso = importr('dpglasso')
-    return np.array(dpglasso.dpglasso(cov, rho=rho)[2])
-
-def MPD(mtx):
-    M,L = np.shape(mtx)
-    k = mtx.max() + 1
-    return np.vstack((np.histogram(i, k, (-.01,20.1))[0]/float(M) for i in mtx.T))
-    
+#from rpy2 import robjects
+#import rpy2.robjects.numpy2ri
+#from rpy2.robjects.packages import importr
+#rpy2.robjects.numpy2ri.activate()
+#
+#def glasso(cov, rho, glasso_kwargs = None):
+#    dpglasso = importr('dpglasso')
+#    return np.array(dpglasso.dpglasso(cov, rho=rho)[2])
 
 def MER(mtx, **kw):
     delta = kw.get('delta', 0.01)
@@ -218,7 +218,6 @@ def compress_jpd(j):
     j = j[:,np.sum(j, 0) > 0.][np.sum(j,1) >0.,:]
     return j
 
-"""
 def min_chi2(j, **kw):
     alpha = kw.get('alpha', 1.)
     k,l = np.shape(j)
@@ -234,25 +233,33 @@ def min_chi2(j, **kw):
     p = cvx.Problem(cvx.Minimize(cvx.sum_squares(v - e) + alpha*(cvx.sum_squares(v - j))), constraints)
     return p
 
-"""
-
-def expected(mtx):
-    M = MPD(mtx).flatten()
+def expected(mtx, **kw):
+    w = kw.get('weights', None)
+    M = mpd(mtx, weights=w).flatten()
     return np.matrix(M).T*np.matrix(M)
 
-def observed(mtx):
+def observed(mtx, **kw):
+    w = kw.get('weights', None)
     M,L = np.shape(mtx)
     k = mtx.max() + 1
-    O = jpd(mtx)
+    O = jpd(mtx, weights=w)
     return O.reshape((L,L,k,k)).swapaxes(1,2).reshape((L*k, L*k))
 
-def min_chi2(mtx, **kw):
-    alpha = kw.get('alpha', 1.)
+def block_sum(A, **kw):
+    k = kw.get('k', 21)
+    L = np.shape(A)[0]/k
+    S = np.zeros((L,L))
+    for i in range(k):
+        for j in range(k):
+            S = S + A[np.arange(L)*i,:][:,np.arange(L)*j]
+    return S
+
+def min_goof(mtx, **kw):
     M,L = np.shape(mtx)
     k = mtx.max() + 1
 
     #Set up the system variables
-    M = MPD(mtx).flatten()
+    M = mpd(mtx).flatten()
     E = np.matrix(M).T*np.matrix(M)
     O = jpd(mtx)
     O = O.reshape((L,L,k,k)).swapaxes(1,2).reshape((L*k, L*k))
@@ -274,3 +281,38 @@ def min_chi2(mtx, **kw):
     
     p = cvx.Problem(cvx.Minimize(cvx.sum_squares(V - E) + alpha*(cvx.sum_squares(V - O))), constraints)
     return p
+
+from scipy import sparse
+
+
+class chi2():
+    def __init__(self, mtx):
+        self.mtx = mtx.copy()
+        self.J, self.M, self.T = self.get_sparse_masks()
+
+    def get_sparse_masks(self):
+        k = self.mtx.max() + 1
+        M,L = np.shape(self.mtx)
+        bivariate_mapper = np.arange(k*k).reshape((k,k))
+        j = bivariate_mapper[self.mtx[:,:,None], self.mtx[:,None,:]].swapaxes(0,2).swapaxes(0,1)
+        j = j.reshape((L,L,k**2))
+        idx_j1,idx_j2 = [],[]
+        idx_m1,idx_m2 = [],[]
+        idx_t1,idx_t2 = [],[]
+        for i in range(k**2):
+            rownum,colnum = np.where(bivariate_mapper == i)
+            row,col = bivariate_mapper[rownum], bivariate_mapper[:,colnum]
+            j1,j2 = np.where(j == i)
+            m1,m2 = np.where((j >= row.min()) & (j <= row.max()))
+            t1,t2 = np.where((j >= col.min()) & (j <= col.max()))
+            idx_j1 = np.concatenate(idx_j1, j1)
+            idx_j2 = np.concatenate(idx_j2, j2 + i)
+            idx_m1 = np.concatenate(idx_m1, m1)
+            idx_m2 = np.concatenate(idx_m2, m2 + i)
+            idx_t1 = np.concatenate(idx_t1, t1)
+            idx_t2 = np.concatenate(idx_t2, t2 + i)
+        J = sparse.coo_matrix((np.ones(len(idx_j1)), (idx_j1, idx_j2)))
+        M = sparse.coo_matrix((np.ones(len(idx_m1)), (idx_m1, idx_m2)))
+        T = sparse.coo_matrix((np.ones(len(idx_t1)), (idx_t1, idx_t2)))
+        return J, M, T
+
