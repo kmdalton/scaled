@@ -140,7 +140,7 @@ def coordinate_descent(f, g, **kw):
             def v(x):
                 w[j] = x
                 return f(w)
-            w[j] = minimize(v, [w[i]], bounds=[(0,None)])['x']
+            w[j] = minimize(v, [w[i]], bounds=[(0., None)])['x']
             w = w/np.sum(w)
         if np.sum(np.abs(old_weights - w)) < tolerance:
             converged = True
@@ -285,34 +285,40 @@ def min_goof(mtx, **kw):
 from scipy import sparse
 
 
-class chi2():
+class gstat():
     def __init__(self, mtx):
         self.mtx = mtx.copy()
-        self.J, self.M, self.T = self.get_sparse_masks()
+        self.J, self.P1, self.P2 = self.get_sparse_masks()
 
     def get_sparse_masks(self):
         k = self.mtx.max() + 1
         M,L = np.shape(self.mtx)
         bivariate_mapper = np.arange(k*k).reshape((k,k))
         j = bivariate_mapper[self.mtx[:,:,None], self.mtx[:,None,:]].swapaxes(0,2).swapaxes(0,1)
-        j = j.reshape((L,L,k**2))
+        j = j.reshape((L*L, M))
+        j = j.swapaxes(0, 1)
         idx_j1,idx_j2 = [],[]
-        idx_m1,idx_m2 = [],[]
-        idx_t1,idx_t2 = [],[]
+        idx_p1_1,idx_p1_2 = [],[]
+        idx_p2_1,idx_p2_2 = [],[]
         for i in range(k**2):
             rownum,colnum = np.where(bivariate_mapper == i)
             row,col = bivariate_mapper[rownum], bivariate_mapper[:,colnum]
             j1,j2 = np.where(j == i)
             m1,m2 = np.where((j >= row.min()) & (j <= row.max()))
             t1,t2 = np.where((j >= col.min()) & (j <= col.max()))
-            idx_j1 = np.concatenate(idx_j1, j1)
-            idx_j2 = np.concatenate(idx_j2, j2 + i)
-            idx_m1 = np.concatenate(idx_m1, m1)
-            idx_m2 = np.concatenate(idx_m2, m2 + i)
-            idx_t1 = np.concatenate(idx_t1, t1)
-            idx_t2 = np.concatenate(idx_t2, t2 + i)
-        J = sparse.coo_matrix((np.ones(len(idx_j1)), (idx_j1, idx_j2)))
-        M = sparse.coo_matrix((np.ones(len(idx_m1)), (idx_m1, idx_m2)))
-        T = sparse.coo_matrix((np.ones(len(idx_t1)), (idx_t1, idx_t2)))
-        return J, M, T
+            idx_j1 = np.concatenate((idx_j1, j1))
+            idx_j2 = np.concatenate((idx_j2, j2 + i*L*L))
+            idx_p1_1 = np.concatenate((idx_p1_1, m1))
+            idx_p1_2 = np.concatenate((idx_p1_2, m2 + i*L*L))
+            idx_p2_1 = np.concatenate((idx_p2_1, t1))
+            idx_p2_2 = np.concatenate((idx_p2_2, t2 + i*L*L))
+        print idx_j1.max(),idx_p1_1.max(),idx_p2_1.max()
+        J = sparse.coo_matrix((np.ones(len(idx_j1)), (idx_j1, idx_j2)), (M, L*L*k*k))
+        P1 = sparse.coo_matrix((np.ones(len(idx_p1_1)), (idx_p1_1, idx_p1_2)), (M, L*L*k*k))
+        P2 = sparse.coo_matrix((np.ones(len(idx_p2_1)), (idx_p2_1, idx_p2_2)), (M, L*L*k*k))
+        return sparse.csr_matrix(J), sparse.csr_matrix(P1), sparse.csr_matrix(P2)
 
+    def __call__(self, w):
+        O = np.array(w*self.J)
+        E1, E2 = np.array(w*self.P1), np.array(w*self.P2)
+        return np.nansum(O*(np.log(O) - np.log(E1) - np.log(E2)))
