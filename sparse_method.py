@@ -297,26 +297,31 @@ class gstat():
         j = bivariate_mapper[self.mtx[:,:,None], self.mtx[:,None,:]].swapaxes(0,2).swapaxes(0,1)
         j = j.reshape((L*L, M))
         j = j.swapaxes(0, 1)
-        idx_j1,idx_j2 = [],[]
-        idx_p1_1,idx_p1_2 = [],[]
-        idx_p2_1,idx_p2_2 = [],[]
+
+        J  = sparse.lil_matrix((M, L*L*k*k), dtype=np.int8)
+        P1 = sparse.lil_matrix((M, L*L*k*k), dtype=np.int8)
+        P2 = sparse.lil_matrix((M, L*L*k*k), dtype=np.int8)
+
         for i in range(k**2):
+            j1,j2 = np.where(j == i)
+            J[j1, j2 + i*L*L] = 1
+            del j1,j2
+
             rownum,colnum = np.where(bivariate_mapper == i)
             row,col = bivariate_mapper[rownum], bivariate_mapper[:,colnum]
-            j1,j2 = np.where(j == i)
-            m1,m2 = np.where((j >= row.min()) & (j <= row.max()))
-            t1,t2 = np.where((j >= col.min()) & (j <= col.max()))
-            idx_j1 = np.concatenate((idx_j1, j1))
-            idx_j2 = np.concatenate((idx_j2, j2 + i*L*L))
-            idx_p1_1 = np.concatenate((idx_p1_1, m1))
-            idx_p1_2 = np.concatenate((idx_p1_2, m2 + i*L*L))
-            idx_p2_1 = np.concatenate((idx_p2_1, t1))
-            idx_p2_2 = np.concatenate((idx_p2_2, t2 + i*L*L))
-        print idx_j1.max(),idx_p1_1.max(),idx_p2_1.max()
-        J = sparse.coo_matrix((np.ones(len(idx_j1)), (idx_j1, idx_j2)), (M, L*L*k*k))
-        P1 = sparse.coo_matrix((np.ones(len(idx_p1_1)), (idx_p1_1, idx_p1_2)), (M, L*L*k*k))
-        P2 = sparse.coo_matrix((np.ones(len(idx_p2_1)), (idx_p2_1, idx_p2_2)), (M, L*L*k*k))
-        return sparse.csr_matrix(J), sparse.csr_matrix(P1), sparse.csr_matrix(P2)
+
+            i1,i2 = np.where((j >= row.min()) & (j <= row.max()))
+            P1[i1, i2 + i*L*L] = 1
+            del i1,i2
+
+            i1,i2 = np.where((j >= col.min()) & (j <= col.max()))
+            P2[i1, i2 + i*L*L] = 1
+            del i1,i2
+
+        J  = sparse.csr_matrix(J)
+        P1 = sparse.csr_matrix(P1)
+        P2 = sparse.csr_matrix(P2)
+        return J, P1, P2
 
     def __call__(self, w):
         O = np.array(w*self.J)
