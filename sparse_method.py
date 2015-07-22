@@ -288,42 +288,27 @@ from scipy import sparse
 class gstat():
     def __init__(self, mtx):
         self.mtx = mtx.copy()
-        self.J, self.P1, self.P2 = self.get_sparse_masks()
+        self.mask= self.get_sparse_mask()
+        self.M, self.L = mtx.shape
+        self.k = mtx.max()+1
 
-    def get_sparse_masks(self):
-        k = self.mtx.max() + 1
+    def get_sparse_mask(self):
         M,L = np.shape(self.mtx)
-        bivariate_mapper = np.arange(k*k).reshape((k,k))
-        j = bivariate_mapper[self.mtx[:,:,None], self.mtx[:,None,:]].swapaxes(0,2).swapaxes(0,1)
-        j = j.reshape((L*L, M))
-        j = j.swapaxes(0, 1)
-
-        J  = sparse.lil_matrix((M, L*L*k*k), dtype=np.int8)
-        P1 = sparse.lil_matrix((M, L*L*k*k), dtype=np.int8)
-        P2 = sparse.lil_matrix((M, L*L*k*k), dtype=np.int8)
-
-        for i in range(k**2):
-            j1,j2 = np.where(j == i)
-            J[j1, j2 + i*L*L] = 1
-            del j1,j2
-
-            rownum,colnum = np.where(bivariate_mapper == i)
-            row,col = bivariate_mapper[rownum], bivariate_mapper[:,colnum]
-
-            i1,i2 = np.where((j >= row.min()) & (j <= row.max()))
-            P1[i1, i2 + i*L*L] = 1
-            del i1,i2
-
-            i1,i2 = np.where((j >= col.min()) & (j <= col.max()))
-            P2[i1, i2 + i*L*L] = 1
-            del i1,i2
-
-        J  = sparse.csr_matrix(J)
-        P1 = sparse.csr_matrix(P1)
-        P2 = sparse.csr_matrix(P2)
-        return J, P1, P2
+        k = self.mtx.max()+1
+        mask = sparse.lil_matrix((M,L*k))
+        for i in range(k):
+            mask[:, np.arange(L)*k+i] = np.array(self.mtx==i, dtype=float)
+        return sparse.csr_matrix(mask)
 
     def __call__(self, w):
-        O = np.array(w*self.J)
-        E1, E2 = np.array(w*self.P1), np.array(w*self.P2)
-        return np.nansum(O*(np.log(O) - np.log(E1) - np.log(E2)))
+        w = sparse.csc_matrix(w)
+        O = (self.mask.multiply(w.T)).T*self.mask
+        E = (w*self.mask).T*(w*self.mask)
+
+        logO = O.copy()
+        logE = E.copy()
+        logO.data = np.log(O.data)
+        logE.data = np.log(E.data)
+
+        return np.nansum((O.multiply(logO-logE)).data)
+
