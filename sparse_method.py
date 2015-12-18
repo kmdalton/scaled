@@ -135,7 +135,7 @@ class minmi():
             if verbose:
                 print "\tCycle {} complete, objective = {}".format(i+1, H[-1])
                 print "\t{} s elapsed".format(time() - start)
-        return np.array(H, np.array(T)
+        return np.array(H), np.array(T)
 
     def __call__(self, w):
         W = sparse.csr_matrix(np.diag(w))
