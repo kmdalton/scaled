@@ -58,13 +58,17 @@ def project(W, **kw):
     bound = kw.get('bound', 0.) 
     M = len(W)
     V = cvx.Variable(M)
-    p = cvx.Problem(cvx.Minimize(cvx.norm2(V-W)), [cvx.sum_entries(V) == 1., V > bound])
+    p = cvx.Problem(cvx.Minimize(cvx.norm2(V-W)), [cvx.sum_entries(V) == 1., V >= bound])
     try:
         p.solve(max_iters=100000, verbose=verbose)
     except:
         p.solve(solver="SCS", max_iters=100000, verbose=verbose)
+    w = np.array(p.variables()[0].value).flatten()
+    if w.min() < 0.:
+        w[w < 0.] = 0.
+        w = project(w)
 
-    return np.array(p.variables()[0].value).flatten()
+    return w
 
 class grad_helper():
     def __init__(self, A, W, **kw):
@@ -114,6 +118,9 @@ class minmi():
         maxiter = kw.get('maxiter', 100)
         H,T = [],[]
         start = time()
+        if verbose:
+            print "W is initialized to: {}".format(W)
+            print "\tInitial objective value = {}".format(self(W))
         for i in range(maxiter):
             if verbose:
                 print "Entering gradient descent cycle {}/{}".format(i+1, maxiter)
