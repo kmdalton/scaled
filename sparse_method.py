@@ -39,7 +39,7 @@ class entropy():
             W = project(W)
             H.append(self(W, columns=columns))
             T.append(W)
-        return H,T
+        return np.array(H), np.array(T)
 
     def nullentropy(self, **kw):
         w = kw.get('weights', sparse.csr_matrix(np.ones(self.M)/float(self.M)))
@@ -125,6 +125,8 @@ class minmi():
             if verbose:
                 print "Entering gradient descent cycle {}/{}".format(i+1, maxiter)
             W = W - alpha*self.gradient(W)
+            if verbose:
+                print "Projecting gradient step with cvx ..."
             W = project(W, bound=bound)
             if verbose:
                 print "W is: {}".format(W)
@@ -133,7 +135,7 @@ class minmi():
             if verbose:
                 print "\tCycle {} complete, objective = {}".format(i+1, H[-1])
                 print "\t{} s elapsed".format(time() - start)
-        return H,T
+        return np.array(H, np.array(T)
 
     def __call__(self, w):
         W = sparse.csr_matrix(np.diag(w))
