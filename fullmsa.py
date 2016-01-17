@@ -641,3 +641,28 @@ def mat_mul_metric(mtx, **kw):
         A = np.matrix(W*np.asarray(A).T).T
         C[i] = A.T*A
     return C
+
+def save_matrix(mtx, ats, outFN):
+    np.savetxt(outFN, mtx, delimiter=',', header=','.join(map(str, ats)), fmt='%d')
+
+def prune_gappy_seqs(mtx, sigma_cutoff):
+    m,l = mtx.shape
+    percent_gaps = np.sum(mtx==20,1)/1./m
+    u,s = np.mean(percent_gaps),np.std(percent_gaps)
+    return mtx[np.where(percent_gaps < u+sigma_cutoff*s)[0]]
+
+def prune_gappy_columns(ats, mtx, sigma_cutoff):
+    m,l = mtx.shape
+    percent_gaps = np.sum(mtx==20,0)/1./m
+    u,s = np.mean(percent_gaps),np.std(percent_gaps)
+    idx= np.where(percent_gaps < u+sigma_cutoff*s)[0]
+    return ats[idx], mtx[:,idx]
+
+def prune_gaps(mtx, entropy_cutoff, sigma_cutoff):
+    mtx = mtx.copy()
+    m,l = mtx.shape
+    ats, mtx = prunePrimaryGaps(mtx, cutoff=0.)
+    mtx = prune_gappy_seqs(mtx, sigma_cutoff)
+    ats, mtx = prunePrimaryGaps(mtx, cutoff=entropy_cutoff)
+    ats, mtx = prune_gappy_columns(ats, mtx, sigma_cutoff)
+    return ats,mtx
