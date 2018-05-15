@@ -69,7 +69,7 @@ def importStockholm(stockholmFN):
                     seqs[seqname] = seq
                     headers.append(seqname)
             except:
-                print "%s : %s"%(seqname, seq)
+                print("{} : {}".format(seqname, seq))
     #Return two tuples, first the headers and then the corresponding sequences
     return headers, [seqs[i] for i in headers]
 

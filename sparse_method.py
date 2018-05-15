@@ -119,22 +119,22 @@ class minmi():
         H,T = [],[]
         start = time()
         if verbose:
-            print "W is initialized to: {}".format(W)
-            print "\tInitial objective value = {}".format(self(W))
+            print("W is initialized to: {}".format(W))
+            print("\tInitial objective value = {}".format(self(W)))
         for i in range(maxiter):
             if verbose:
-                print "Entering gradient descent cycle {}/{}".format(i+1, maxiter)
+                print("Entering gradient descent cycle {}/{}".format(i+1, maxiter))
             W = W - alpha*self.gradient(W)
             if verbose:
-                print "Projecting gradient step with cvx ..."
+                print("Projecting gradient step with cvx ...")
             W = project(W, bound=bound)
             if verbose:
-                print "W is: {}".format(W)
+                print("W is: {}".format(W))
             H.append(self(W))
             T.append(W)
             if verbose:
-                print "\tCycle {} complete, objective = {}".format(i+1, H[-1])
-                print "\t{} s elapsed".format(time() - start)
+                print("\tCycle {} complete, objective = {}".format(i+1, H[-1]))
+                print("\t{} s elapsed".format(time() - start))
         return np.array(H), np.array(T)
 
     def __call__(self, w):

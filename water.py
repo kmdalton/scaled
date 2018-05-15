@@ -137,37 +137,36 @@ def gappyRegister(consensus, seq, resNums):
     ats = [None for i in range(len(consensus) + 1)]
     
     charPlatzen = np.where(np.array(list(consensus)) != '-')[0]+1
-    #print charPlatzena
     for pl,alnd in zip(charPlatzen, gappyAts):
-        #print 'Platz - %s | ats - %s' %(pl, alnd)
         ats[pl] = alnd
     return np.array(ats)
 
 # returns relative sequence of aligned sequences
 def register(consensus, seq, resNums):
     aln = align(consensus, seq).split('\n')
-    for line in aln: print line
+    for line in aln: 
+        print(line)
     aln = [i for i in aln if len(i) > 2 and i[0] != '#']
     l = len(aln)
     s1 = ''.join([aln[3*i] for i in range(l/3)])
     s1 = re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', s1)
     s2 = ''.join([aln[3*i+2] for i in range(l/3)])
     s2 = re.sub(r'[^-ACDEFGHIKLMNPQRSTVWY]', '', s2)
-    print aln
+    print(aln)
     x = int(aln[0].split()[0]) 
     x = x-1 #Consensus seq and ats are zero indexed
     y = int(aln[2].split()[0])
     y = y-1 #resNums is zero indexed
     ats = [None for i in range(len(consensus))]
-    print consensus
-    print seq
-    print resNums
+    print(consensus)
+    print(seq)
+    print(resNums)
     for i1,i2 in zip(s1, s2):
         if i1 != '-' and i2 != '-':
             try:
                 ats[x] = resNums[y]
             except IndexError:
-                print 'Something happened with %s%s' %(y, i2)
+                print('Something happened with {}{}'.format(y, i2))
         if i1 != '-':
             x += 1
         if i2 != '-':
@@ -206,7 +205,7 @@ def phmmer(tarseq, **kw):
                     seqs[seqname] = seq
                     headers.append(seqname)
             except:
-                print "%s : %s"%(seqname, seq)
+                print("{} : {}".format(seqname, seq))
     #Return two tuples, first the headers and then the corresponding sequences
     return headers, [seqs[i] for i in headers]
 
@@ -334,10 +333,10 @@ def doubleRegister(consensus, seq1, seq2):
     l1,l2 = len(seq1),len(seq2)
     resnums = np.concatenate((np.arange(1, l1+1), np.arange(1, l2+1)))
     ats = register(consensus, seq1+seq2, resnums)
-    print ats
+    print(ats)
     #ats can have Nones in them -- we need to protect ourselves from this:
     tmpats = deepcopy(ats)
-    print tmpats
+    print(tmpats)
     tmpats[np.where(ats) == None] = ats.max()
     boundary = np.argmin(tmpats[1:] -  tmpats[:-1]) + 1
     return ats, boundary
@@ -371,7 +370,6 @@ def ncbiGet(RID, **kw):
                 ]
     kw['RID'] = str(RID)
     QueryString = '&'.join(['='.join((i, str(kw[i]))) for i in GetKwargs if i in kw])
-    #print BaseURL + QueryString
     URL = urllib2.urlopen(BaseURL + QueryString)
     return URL.read()
 
@@ -444,7 +442,7 @@ def ncbiPut(seq, **kw):
     try:
         WAITTIME = int(WAITTIME)
     except ValueError:
-        print "Warning, invalid wait time returned by blast"
+        print("Warning, invalid wait time returned by blast")
 
     return RID, WAITTIME
 
